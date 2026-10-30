@@ -67,7 +67,7 @@ function tradeable(i,sellerId){
 function transferProperty(i,price,buyerId,sellerId){
  const buyer=state.players[buyerId],seller=state.players[sellerId];
  if(!buyer||!seller||buyerId===sellerId||buyer.out||seller.out||!Number.isSafeInteger(price)||price<100||buyer.cash<price||!tradeable(i,sellerId))return false;
- buyer.cash-=price;seller.cash+=price;state.props[i].owner=buyerId;
+ buyer.cash-=price;seller.cash+=price;state.props[i].owner=buyerId;checkAdventures(buyer);
  log(buyer.name+' 以 '+money(price)+' 从 '+seller.name+' 收购 '+tiles[i].name+'。');return true;
 }
 function aiTryTrade(p){

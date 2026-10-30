@@ -30,6 +30,7 @@ function normalizeSave(input){
   out.offer={tile:o.tile,buyer:o.buyer,seller:o.seller,price:o.price};
  }
  for(const p of players){const pass=s.passports?.[p.id];if(pass&&Array.isArray(pass.groups)&&pass.groups.every(g=>validInt(g,0,7)))out.passports[p.id]={groups:[...new Set(pass.groups)],rewarded:!!pass.rewarded}}
+ const adventure=normalizeAdventure(s.adventure,n,s.round);if(adventure){if(WORLD_NEWS[adventure.news.current].factor!==factor)throw Error('新闻与市场数据不一致');out.adventure=adventure;}
  return out;
 }
 function readSlots(){try{const data=JSON.parse(localStorage.getItem(SLOT_STORE)||'[]');return Array.isArray(data)?data.slice(0,5):[]}catch(e){return []}}

@@ -13,7 +13,7 @@ zoomButton.onclick=()=>{
  if(zoom)requestAnimationFrame(()=>{
   const me=typeof onlineRoom!=='undefined'&&onlineRoom?.game?onlineRoom.me:state.turn;
   const tile=$('#board').querySelectorAll('.tile')[state.players[me]?.pos||0];if(tile){const rect=tile.getBoundingClientRect(),view=boardViewport.getBoundingClientRect();boardViewport.scrollLeft+=rect.left-view.left+rect.width/2-view.width/2}
- });else boardViewport.scrollLeft=0;
+ });else boardViewport.scrollLeft=0;refreshDeviceControls();
 };
 const actions=$('.atlas-actions'),extraTools=document.createElement('div');extraTools.id='extraTools';extraTools.className='extra-tools';
 for(const id of ['trade','ranking','journal','saveCenter','guide','motionToggle'])extraTools.append($('#'+id));

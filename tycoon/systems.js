@@ -21,6 +21,8 @@ function renderAtlas(){
  if(state.phase==='auction')$('#turnText').textContent='地产拍卖进行中';
 }
 function marketEvent(){
+ if(hasAdventure()){adventureNews();return}
+
  const events=[['旅游旺季',1.25],['城市复苏',1.15],['平稳市场',1],['淡季调整',.8],['投资热潮',1.35]];
  const [name,factor]=events[Math.floor(Math.random()*events.length)];state.market={name,factor};
  log('全球市场：'+name+'。所有地产租金 ×'+factor+'，持续到下一次市场更新。');
@@ -52,7 +54,7 @@ function auctionBid(bid){
  if(!candidates.length){
   if(a.leader!==null){const winner=state.players[a.leader];winner.cash-=a.price;state.props[a.tile].owner=winner.id;log(winner.name+' 以 '+money(a.price)+' 拍下 '+tiles[a.tile].name+'。')}
   else log(tiles[a.tile].name+' 无人出价，继续由银行持有。');
-  state.auction=null;state.phase='end';render();scheduleAI();return;
+  if(a.leader!==null)checkAdventures(state.players[a.leader]);state.auction=null;state.phase='end';render();scheduleAI();return;
  }
  do{a.bidder=(a.bidder+1)%state.players.length}while(!candidates.some(x=>x.id===a.bidder));
  render();scheduleAI();
