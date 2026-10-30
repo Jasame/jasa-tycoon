@@ -3,7 +3,7 @@ let chosenMap='world';
 function drawMapPicker(){
  chosenMap=activeMap.id;
  const host=$('#mapPicker');
- host.innerHTML='<p class="eyebrow">选择你的下一段旅程 · 8 张地图</p><div class="map-grid">'+MAPS.map(m=>`<button type="button" class="map-card ${chosenMap===m.id?'chosen':''}" data-map="${m.id}" style="--map-color:${m.color}"><b>${m.icon} ${m.name}</b><small>${m.en}</small><span>${m.desc}</span></button>`).join('')+'<button type="button" class="map-card '+(chosenMap==='legacy'?'chosen':'')+'" data-map="legacy"><b>▥ 城市经典</b><small>ORIGINAL</small><span>保留最初的中国城市棋盘。</span></button></div>';
+ host.innerHTML='<p class="eyebrow">选择你的下一段旅程 · 8 张地图</p><div class="map-grid">'+MAPS.map(m=>`<button type="button" class="map-card ${chosenMap===m.id?'chosen':''}" data-map="${m.id}" style="--map-color:${m.color}"><b>${m.icon} ${m.name}</b><small>${m.en}</small><span>${m.desc}</span><em>${MAP_RULES[m.id].title} · ${MAP_RULES[m.id].text}</em></button>`).join('')+'<button type="button" class="map-card '+(chosenMap==='legacy'?'chosen':'')+'" data-map="legacy"><b>▥ 城市经典</b><small>ORIGINAL</small><span>保留最初的中国城市棋盘。</span></button></div>';
  host.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>{chosenMap=b.dataset.map;host.querySelectorAll('[data-map]').forEach(x=>x.classList.toggle('chosen',x===b))});
 }
 function renderAtlas(){
@@ -17,7 +17,7 @@ function renderAtlas(){
  $('#atlas').onclick=()=>{if(busy){toast('请等待移动完成。');return}setup()};
  $('#trade').onclick=showTrade;
  $('#journal').onclick=showJournal;
- $('#ranking').onclick=()=>{modal('实时资产榜',rankingHTML());};
+ $('#mapRuleTitle').textContent=specialRules()?mapRule().title:'经典规则 · 兼容存档';$('#mapRuleText').textContent=journeyStatus();$('#saveCenter').onclick=showSaveCenter;$('#guide').onclick=()=>showGuide();$('#ranking').onclick=()=>{modal('实时资产榜',rankingHTML());};
  if(state.phase==='auction')$('#turnText').textContent='地产拍卖进行中';
 }
 function marketEvent(){
@@ -39,8 +39,8 @@ function auctionAI(){
  const a=state.auction,p=state.players[a.bidder],t=tiles[a.tile];if(!p.ai)return;
  const others=tiles.filter(x=>x.type==='property'&&x.group===t.group&&x.i!==t.i);
  const completes=t.type==='property'&&others.every(x=>state.props[x.i].owner===p.id);
- const reserve=state.difficulty==='easy'?3500:state.difficulty==='expert'?700:1600;
- const ceiling=t.price*(completes?1.55:state.difficulty==='easy'?.8:1.1);
+ const reserve=aiReserve(p);
+ const ceiling=aiValue(p,t)*(state.difficulty==='easy'?.8:1);
  auctionBid(a.price+100<=Math.min(p.cash-reserve,ceiling));
 }
 function auctionBid(bid){
@@ -64,16 +64,10 @@ function showTrade(){
  if($('#offerTrade'))$('#offerTrade').onclick=()=>{
   const i=Number($('#tradeTile').value),amount=Number($('#tradePrice').value),buyer=current(),t=tiles[i],r=state.props[i],seller=state.players[r.owner];
   if(!canManage()||!Number.isSafeInteger(amount)||amount<100||amount>buyer.cash){toast('请输入有效报价，且不能超过现金。');return}
-  if(seller.ai){const group=tiles.filter(x=>x.type==='property'&&x.group===t.group);const count=group.filter(x=>state.props[x.i].owner===seller.id).length;const threshold=t.price*(count===group.length?2:state.difficulty==='expert'?1.6:1.25);if(amount<threshold){toast(seller.name+' 拒绝了报价。可以提高出价再试。');return}finishTrade(i,amount,buyer.id,seller.id)}
+  if(seller.ai){const group=tiles.filter(x=>x.type==='property'&&x.group===t.group);const count=group.filter(x=>state.props[x.i].owner===seller.id).length;const threshold=aiSellingPrice(seller,t);if(amount<threshold){toast(seller.name+' 拒绝了报价。可以提高出价再试。');return}finishTrade(i,amount,buyer.id,seller.id)}
   else{clearTimeout(aiTimer);modal('请交给 '+seller.name+' 确认',`<p>${escapeHTML(buyer.name)} 希望以 ${money(amount)} 收购你的 ${t.name}。接受后地产和现金立即转移。</p><button class="primary" id="acceptTrade">卖方接受交易</button><button class="secondary wide" id="rejectTrade">拒绝</button>`);$('#acceptTrade').onclick=()=>finishTrade(i,amount,buyer.id,seller.id);$('#rejectTrade').onclick=closeModal;}
  };
 }
-function finishTrade(i,amount,buyerId,sellerId){
- if(!canManage()||current().id!==buyerId)return;
- const buyer=state.players[buyerId],seller=state.players[sellerId],r=state.props[i];
- if(r.owner!==sellerId||buyer.cash<amount||r.mortgage)return;
- buyer.cash-=amount;seller.cash+=amount;r.owner=buyerId;
- log(buyer.name+' 以 '+money(amount)+' 从 '+seller.name+' 收购 '+tiles[i].name+'。');closeModal();render();toast('交易完成');
-}
+function finishTrade(i,amount,buyerId,sellerId){if(!canManage()||current().id!==buyerId)return;if(!transferProperty(i,amount,buyerId,sellerId)){toast('交易条件已变化，请重新报价。');return}closeModal();render();toast('交易完成')}
 function rankingHTML(){return [...state.players].sort((a,b)=>(a.out-b.out)||worth(b)-worth(a)).map((p,i)=>`<div class="prop-row"><div>${i===0?'🏆':i+1} ${escapeHTML(p.name)}<small>${owned(p.id).length} 处地产 · ${p.out?'已破产':'现金 '+money(p.cash)}</small></div><strong>${money(worth(p))}</strong></div>`).join('')}
 function showJournal(){modal('旅程记录',`<p>${activeMap.name} · 第 ${state.round} 回合 · ${state.difficulty==='expert'?'进阶':state.difficulty==='easy'?'休闲':'标准'} AI</p>`+rankingHTML()+'<h3>最近 50 条城市动态</h3><div class="journal">'+state.logs.map(x=>`<p><small>第 ${x.round} 回合</small> ${escapeHTML(x.text)}</p>`).join('')+'</div>');}
