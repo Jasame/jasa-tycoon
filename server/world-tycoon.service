@@ -1,0 +1,26 @@
+[Unit]
+Description=World Tycoon remote multiplayer
+After=network.target
+
+[Service]
+Type=simple
+User=www
+Group=www
+WorkingDirectory=/www/tycoon-online/app-v4
+ExecStart=/www/server/nodejs/v20.9.0/bin/node /www/tycoon-online/app-v4/server/server.cjs
+Environment=NODE_ENV=production
+Environment=PORT=8912
+Environment=STATE_DIR=/var/lib/tycoon-online
+StateDirectory=tycoon-online
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/tycoon-online
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
