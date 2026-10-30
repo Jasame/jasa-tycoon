@@ -104,7 +104,7 @@ setup=function(){return onlineSession?showOnline():offline.setup()};
 showSaveCenter=function(){if(onlineSession){modal('联机进度自动保存','<p>本房间由服务器保存进度。刷新页面会恢复你的座位。可在“房间与重连”中返回已保存的房间。</p><p>本地手动存档与联机对局互相独立。</p>');return}offline.showSaveCenter()};
 function confirmGoLocal(){
  modal('返回本地对局？','<p>联机房间和座位会保留，可稍后重连；离线后超时操作仍由服务器托管。本地对局将从本地存档恢复。</p><button class="primary" id="goLocal">返回本地对局</button>');
- $('#goLocal').onclick=()=>{const lobby=onlineRoom?.status==='lobby';if(lobby&&onlineConnected&&!onlinePending)onlineAPI('leave',{revision:onlineRoom.revision,actionId:crypto.randomUUID()}).catch(()=>{});clearTimeout(onlineTimer);onlineSession=null;onlineRoom=null;onlinePending=null;onlineConnected=false;onlineStore();state=loadCurrentGame();activateMap(state.map);$('#onlinePanel').hidden=true;$('.layout').hidden=false;$('.map-rule').hidden=false;$('#modal').hidden=true;render();scheduleAI()};
+ $('#goLocal').onclick=()=>{const lobby=onlineRoom?.status==='lobby';if(lobby&&onlineConnected&&!onlinePending)onlineAPI('leave',{revision:onlineRoom.revision,actionId:crypto.randomUUID()}).catch(()=>{});clearTimeout(onlineTimer);onlineSession=null;onlineRoom=null;onlinePending=null;onlineConnected=false;onlineStore();state=loadCurrentGame();activateMap(state.map);$('#onlinePanel').hidden=true;renderOnlinePanel();$('.layout').hidden=false;$('.map-rule').hidden=false;$('#modal').hidden=true;render();scheduleAI()};
 }
 function showOnline(){
  if(location.protocol==='http:'&&!['localhost','127.0.0.1'].includes(location.hostname)){location.assign('https://jasa.hk/tycoon/'+location.search);return}
