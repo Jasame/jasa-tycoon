@@ -1,17 +1,9 @@
-City Tycoon — jasa.hk/tycoon deployment
+World Tycoon v2 — jasa.hk/tycoon
 
-This archive contains the original standalone game. No Node.js, Python, database or build step is required on the server.
+Upload the complete tycoon folder (index.html, style.css, atlas.js, systems.js, game.js) to the website root. No build, database or third-party dependencies are required.
 
-BaoTa deployment:
-1. Open Files and navigate to /www/wwwroot/jasa.hk.
-2. Upload this ZIP and extract it here, keeping the tycoon folder.
-3. Confirm /www/wwwroot/jasa.hk/tycoon/index.html exists.
-4. Visit https://jasa.hk/tycoon/ and start a game.
+Before replacement, preserve the existing tycoon directory. On 2026-10-31 the v1 server directory was preserved as tycoon-backup-v1-20261031.
 
-The package contains only tycoon/index.html, tycoon/style.css and tycoon/game.js. It does not update the homepage, /bank/, Nginx, SSL or existing services. If a tycoon directory already exists, preserve a copy before replacing its files.
+The game uses relative asset paths and browser localStorage. Only the most recent game is saved; v1 saves migrate to the original city map. New maps are selected when starting a new game.
 
-Nginx normally redirects /tycoon to /tycoon/ and serves index.html. If it returns 404 or another page instead, inspect the current jasa.hk Nginx configuration before making changes.
-
-Game saves are stored in browser localStorage. Saved progress on the previous chatgpt.site origin will not automatically transfer to jasa.hk.
-
-Validation: JavaScript syntax check passed; HTML stylesheet and script references are relative and resolve within tycoon/. Live server and browser validation are pending because this session has no server connection.
+See README.md for features and game modes. MIT licensed.
