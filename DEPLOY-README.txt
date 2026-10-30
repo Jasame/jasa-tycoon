@@ -1,9 +1,9 @@
-World Tycoon v3 — jasa.hk/tycoon
+World Tycoon v4 remote multiplayer
 
-Deploy the complete tycoon folder: index.html, style.css, atlas.js, systems.js, journey.js, saves.js, game.js. No build or dependencies required.
+Requires Node.js 20 and a persistent backend. Static-only deployment preserves local mode but cannot provide remote rooms.
 
-Back up the current server directory before replacement. v3 retains v1/v2 saved games with their original economics, while new games enable map-specific rules.
+Review deploy.sh, server/world-tycoon.service and server/tycoon-online.conf. Run bash deploy.sh prepare, verify the preview, then bash deploy.sh publish.
 
-The Save Center has 5 manual slots, an automatic previous-game backup and JSON import/export. Saves live in the browser, not the server.
+Backend programs and room data stay outside the public web root. The service binds to loopback port 8912; Nginx proxies /tycoon/api/ over HTTPS.
 
-Run node verify.cjs for 35 rule checks. Read README.md for all gameplay and compatibility notes. MIT licensed.
+Run node verify.cjs and node verify-online.cjs before deployment. Back up /var/lib/tycoon-online for room recovery. MIT licensed.
