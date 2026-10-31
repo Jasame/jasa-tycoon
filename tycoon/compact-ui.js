@@ -48,13 +48,13 @@ $('#sound').addEventListener('click',()=>{$('#sound').textContent=muted?'音效 
 function selectedMapPreview(){
  const preview=$('#selectedMapPreview');if(!preview)return;
  const map=MAPS.find(m=>m.id===chosenMap),rule=MAP_RULES[chosenMap]||MAP_RULES.legacy;
- preview.textContent=(MAP_DESIGNS[chosenMap]?.tag||map?.desc||'城市经典')+'。'+rule.title+'：'+rule.text+(chosenMap==='africa'?' 新局生态补贴上限 ¥300。':chosenMap==='antarctica'?' 新局科研拨款上限 ¥300。':'');
+ preview.textContent='初始资金 '+money(mapStartingCash(chosenMap))+' · '+(MAP_DESIGNS[chosenMap]?.tag||map?.desc||'城市经典')+'。'+rule.title+'：'+(['africa','antarctica'].includes(chosenMap)?rule.text.replace(/最高 ¥[58]00/,'最高 ¥300'):chosenMap==='oceania'?'创业补给额外 +¥500，合计 ¥800／¥1,500；停在自有未抵押枢纽获得 ¥300。':rule.text);
  $('#mapPicker')?.querySelectorAll('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===chosenMap)));
 }
 function polishSetup(){
  const body=$('#modalBody'),picker=$('#mapPicker'),start=$('#startGame');if(!picker||!start)return;
  $('.modal').classList.add('setup-modal');$('#modalTitle').textContent='开始新对局';$('#modeInput').options[0].textContent='AI 对战';$('#modeInput').options[1].textContent='同屏轮流';
- const intro=document.createElement('p');intro.className='setup-intro';intro.textContent='新局 ¥10,000 起步 · 到站升级 · 当前进度自动备份。';
+ const intro=document.createElement('p');intro.className='setup-intro';intro.textContent='初始资金随地图适配 · 到站升级 · 当前进度自动备份。';
  const basic=document.createElement('div');basic.className='setup-basic';for(const id of ['nameInput','modeInput','countInput'])basic.append($('#'+id).closest('label'));
  const mapTitle=document.createElement('h3');mapTitle.textContent='选择地图 · 9 张';
  const preview=document.createElement('p');preview.id='selectedMapPreview';preview.className='selected-map-preview';

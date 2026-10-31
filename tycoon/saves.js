@@ -8,7 +8,7 @@ function normalizeSave(input){
  const map=s.map||(s.v===1?'legacy':'world');if(map!=='legacy'&&!MAPS.some(m=>m.id===map))throw Error('存档地图不受支持');
  const players=s.players.map((p,i)=>{
   if(!p||p.id!==i||!validInt(p.cash,-1e9,1e9)||!validInt(p.pos,0,31)||!validInt(p.jail,0,2)||typeof p.out!=='boolean'||typeof p.ai!=='boolean'||typeof p.name!=='string')throw Error('玩家数据不完整');
-  return {id:i,name:p.name.slice(0,12)||'玩家 '+(i+1),ai:p.ai,cash:p.cash,pos:p.pos,jail:p.jail,out:p.out,lastOfferRound:validInt(p.lastOfferRound,0,100000)?p.lastOfferRound:0};
+  return {id:i,name:p.name.slice(0,12)||'玩家 '+(i+1),ai:p.ai,avatar:AVATARS.some(a=>a.id===p.avatar)?p.avatar:AVATARS[i%AVATARS.length].id,cash:p.cash,pos:p.pos,jail:p.jail,out:p.out,lastOfferRound:validInt(p.lastOfferRound,0,100000)?p.lastOfferRound:0};
  });
  if(!players.some(p=>!p.out)||!validInt(s.turn,0,n-1)||(!s.over&&players[s.turn].out)||!validInt(s.round,1,100000)||!validInt(s.limit,0,100000)||!['roll','end','buy','auction','trade'].includes(s.phase)||typeof s.over!=='boolean'||!['ai','local'].includes(s.mode))throw Error('回合数据不完整');
  const props=s.props.map((p,i)=>{if(!p||(p.owner!==null&&!validInt(p.owner,0,n-1))||!validInt(p.level,0,4)||typeof p.mortgage!=='boolean'||(p.owner===null&&(p.level||p.mortgage))||(p.owner!==null&&players[p.owner].out)||((typeof raw[i][1]!=='number')&&p.level))throw Error('地产数据不完整');return {owner:p.owner,level:p.level,mortgage:p.mortgage}});

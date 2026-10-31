@@ -37,9 +37,9 @@ function dockSource(){
  if(!state.over&&state.players[actor]?.ai)return waiting('AI 行动中…');
  if(state.over||current().cash<0||['buy','auction','trade'].includes(state.phase)){
   const primary=choices.find(b=>!b.disabled),secondary=choices.find(b=>b!==primary&&!b.disabled);
-  return {button:primary||null,label:primary?.textContent||'等待操作',secondaryButton:secondary||null,secondaryLabel:secondary?.textContent||'棋盘'};
+  return {button:primary||null,label:primary?.dataset?.label||primary?.textContent||'等待操作',secondaryButton:secondary||null,secondaryLabel:secondary?.dataset?.label||secondary?.textContent||'棋盘'};
  }
- if(state.phase==='end'&&choices[0]?.dataset?.action==='build')return {button:choices[0],label:choices[0].textContent,secondaryButton:choices[1],secondaryLabel:choices[1]?.textContent||'结束回合'};
+ if(state.phase==='end'&&choices[0]?.dataset?.action==='build')return {button:choices[0],label:choices[0].dataset?.label||choices[0].textContent,secondaryButton:choices[1],secondaryLabel:choices[1]?.dataset?.label||choices[1]?.textContent||'结束回合'};
  if(!$('#roll').hidden)return {button:$('#roll'),label:$('#roll').disabled?'等待回合':current().jail?'掷骰出狱':'掷骰子',secondaryLabel:'棋盘'};
  if(!$('#end').hidden)return {button:$('#end'),label:'结束回合',secondaryLabel:'棋盘'};
  return waiting('等待操作');

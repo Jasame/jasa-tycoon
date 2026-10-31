@@ -38,3 +38,7 @@ function redesignMap(){
  tiles=tiles.map(t=>{if(t.type==='property'){const offset=seen[t.group]||0;seen[t.group]=offset+1;return {...t,price:bases[design.tiers[t.group]]+offset*200}}if(t.type==='station')return {...t,price:2000};if(t.type==='park')return {...t,name:'创业补给',symbol:'✚'};if(t.type==='chance')return {...t,name:'创业机遇'};if(t.type==='tax')return {...t,name:t.i===26?'资产审计':'市政税',price:500};return t});
 }
 
+
+const AVATARS=[{id:'fox',name:'狐狸'},{id:'cat',name:'猫咪'},{id:'panda',name:'熊猫'},{id:'rabbit',name:'兔子'},{id:'bear',name:'小熊'},{id:'frog',name:'青蛙'},{id:'owl',name:'猫头鹰'},{id:'penguin',name:'企鹅'},{id:'dog',name:'小狗'},{id:'koala',name:'考拉'},{id:'tiger',name:'老虎'},{id:'raccoon',name:'浣熊'}];
+const MAP_BUDGETS={world:10000,asia:9500,europe:11000,africa:8500,'north-america':12000,'south-america':9000,oceania:10500,antarctica:9000,legacy:10000};
+function mapStartingCash(id){return MAP_BUDGETS[id]||10000}

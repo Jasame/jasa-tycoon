@@ -1,7 +1,7 @@
 'use strict';
 // Presentation preferences are separate from saved games and room state.
 const UI_PREFS_KEY='world-tycoon-display-v1';
-function normalizeUIPreferences(value={}){if(!value||typeof value!=='object')value={};return {language:value.language==='en'?'en':'zh',theme:['jade','midnight','ivory'].includes(value.theme)?value.theme:'jade',layout:value.layout==='focus'?'focus':'standard'}}
+function normalizeUIPreferences(value={}){if(!value||typeof value!=='object')value={};return {language:['en','zh-Hant'].includes(value.language)?value.language:'zh',theme:['jade','midnight','ivory'].includes(value.theme)?value.theme:'jade',layout:value.layout==='focus'?'focus':'standard'}}
 let uiPreferences=normalizeUIPreferences();
 try{uiPreferences=normalizeUIPreferences(JSON.parse(localStorage.getItem(UI_PREFS_KEY)||'{}'))}catch(e){}
 const EN_TEXT=Object.fromEntries(`
@@ -1060,6 +1060,11 @@ Object.assign(EN_TEXT,Object.fromEntries(`
 `.trim().split('\n').map(line=>{const i=line.indexOf('|');return [line.slice(0,i),line.slice(i+1)]})));
 Object.assign(EN_TEXT,{'新局':'New game','起步 · 到站升级 · 当前进度自动备份。':'starting cash · arrival upgrades · current game backed up.','中文':'Chinese','切换为中文':'Switch to Chinese','暂不升级':'Skip upgrade'});
 Object.assign(EN_TEXT,{'定位本回合棋子':'Locate active piece','定位我的棋子':'Locate my piece','本回合棋子':'Active piece','我的棋子':'My piece','棋子':'Piece','本回合':'Active','定位':'Locate','我':'Me'});
+Object.assign(EN_TEXT,{"狐狸":"Fox","猫咪":"Cat","熊猫":"Panda","兔子":"Rabbit","小熊":"Bear","青蛙":"Frog","猫头鹰":"Owl","企鹅":"Penguin","小狗":"Dog","考拉":"Koala","老虎":"Tiger","浣熊":"Raccoon","初始资金":"Starting cash","初始资金随地图适配 · 到站升级 · 当前进度自动备份。":"Map-based starting cash · arrival upgrades · current game backed up.","简 / 繁":"ZH / 繁","繁 / EN":"繁 / EN","简 / EN":"简 / EN","简体中文":"Simplified Chinese","繁體中文":"Traditional Chinese","添加人机":"Add AI player","移除":"Remove","卡通头像":"Cartoon avatar","自动掷骰已开启；买地、升级和交易仍由你决定。":"Auto-roll enabled. Purchases, upgrades and trades remain your choice.","自动掷骰已关闭":"Auto-roll disabled","头像与自动掷骰":"Avatars & auto-roll","选择你的旅程伙伴。棋子编号保持不变。":"Choose your travel companion. Your piece number stays the same.","关闭自动掷骰":"Disable auto-roll","开启自动掷骰":"Enable auto-roll","仅在你的掷骰阶段自动行动。买地、升级、交易与结束回合仍由你确认；弹窗和后台页面暂停自动掷骰。":"Only rolls on your turn. Purchases, upgrades, trades and ending your turn still need confirmation. Paused while a dialog is open or the page is hidden.","自动掷骰 · 开启":"Auto-roll · on","自动掷骰 · 关闭":"Auto-roll · off","只有房主可在等待房间管理人机":"Only the host can manage AI players before the game starts","请选择等待中的人机座位":"Select an AI seat in the lobby"});
+Object.assign(EN_TEXT,{'简 / 繁':'ZH / ZH-Hant','繁 / EN':'ZH-Hant / EN','简 / EN':'ZH / EN'});
+Object.assign(EN_TEXT,{"至少两个席位准备后，由房主开始。可用人机补足空位。初始资金":"The host can start when at least two seats are ready. Fill empty seats with AI. Starting cash","简体 / 繁體 / English":"Simplified / Traditional / English","初始资金随地图适配":"Map-based starting cash"});
+Object.assign(EN_TEXT,{'分享房间码邀请朋友。至少两个席位准备后，由房主开始。可用人机补足空位。初始资金':'Share the room code. The host can start with at least two ready seats, including AI. Starting cash','最多':'Up to'});
+Object.assign(EN_TEXT,{"点击掷骰子或开启自动掷骰。经过起点领取发展金；停在无主地产可购买，放弃后公开拍卖。":"Roll manually or enable auto-roll. Collect development funds when passing Start. Buy unowned properties or send them to auction.","再次停在自有未抵押房产，每次可付费升一级，无需同色。缺现金时可售楼或抵押，抵押地产不收租。":"Land on your own unmortgaged property to pay for one upgrade per visit, without needing a color set. Sell buildings or mortgage for cash. Mortgaged properties earn no rent.","通过地产交易主动提出收购。AI 主动收购默认关闭，可在菜单开启。联机房主可在开局前添加人机。":"Propose a property trade. AI purchase offers are off by default and can be enabled in the menu. Online hosts can add AI before starting."});
 delete EN_TEXT['第'];
 let englishPattern;
 function rebuildEnglishPattern(){englishPattern=new RegExp(Object.keys(EN_TEXT).filter(Boolean).sort((a,b)=>b.length-a.length).map(escapeRegex).join('|'),'g')}
@@ -1072,4 +1077,4 @@ function englishText(text,protectedNames=[]){
  return value.replace(/\uE000(\d+)\uE001/g,(_,i)=>names[Number(i)]);
 }
 // Apply saved colors before the first game render to avoid a theme flash.
-if(typeof document!=='undefined'&&document.documentElement){document.documentElement.lang=uiPreferences.language==='en'?'en':'zh-CN';document.documentElement.dataset.theme=uiPreferences.theme;document.documentElement.dataset.layout=uiPreferences.layout}
+if(typeof document!=='undefined'&&document.documentElement){document.documentElement.lang=uiPreferences.language==='en'?'en':uiPreferences.language==='zh-Hant'?'zh-HK':'zh-CN';document.documentElement.dataset.theme=uiPreferences.theme;document.documentElement.dataset.layout=uiPreferences.layout}
