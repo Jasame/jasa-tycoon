@@ -14,6 +14,7 @@ module.exports=function verifyInterface(){
  test('Auction follows bidder rather than original turn owner',`state.phase='auction';state.auction={bidder:1};controls.choices=[{textContent:'出价',disabled:false},{textContent:'退出',disabled:false}];dockSource().button===controls.choices[0]&&dockSource().secondaryButton===controls.choices[1]`);
  test('Trade follows the seller who must answer',`state.phase='trade';state.offer={seller:1};controls.choices=[{textContent:'接受',disabled:false},{textContent:'拒绝',disabled:false}];dockSource().secondaryButton===controls.choices[1]`);
  test('Pending and disconnected rooms block primary commands',`onlinePending={};const a=!dockSource().button;onlinePending=null;onlineConnected=false;a&&!dockSource().button`);
+ test('Landing decision mirrors upgrade and skip in mobile dock',`onlineSession=null;onlineConnected=true;state.phase='end';controls.roll.hidden=true;controls.end.hidden=false;controls.choices=[{textContent:'升级房屋 · ¥500',disabled:false},{textContent:'暂不升级 · 结束回合',disabled:false}];const s=dockSource();s.button===controls.choices[0]&&s.secondaryButton===controls.choices[1]`);
  console.log(count+' interface checks passed');return count;
 };
 if(require.main===module)module.exports();

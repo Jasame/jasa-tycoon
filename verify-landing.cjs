@@ -1,0 +1,43 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+module.exports=async function verifyLanding(){
+ const source=['atlas.js','systems.js','journey.js','adventures.js','saves.js','game.js'].map(f=>fs.readFileSync(path.join(__dirname,'tycoon',f),'utf8').split("$('#roll').onclick=")[0]).join('\n');
+ const el={hidden:true,classList:{add(){},remove(){}}},ctx=vm.createContext({console,setTimeout:()=>0,clearTimeout(){},document:{querySelector:()=>el}});
+ vm.runInContext(source+'\nrender=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};closeModal=()=>{};delay=async()=>{};',ctx);
+ let checks=0;const test=(name,code)=>{assert.equal(vm.runInContext('{'+code+'}',ctx),true,name);checks++;console.log('PASS '+name)};
+ test('New games opt into landing development',`state=makeGame();landingRules()&&state.economy.upgrade===null`);
+ test('Purchasing does not grant an immediate upgrade',`state.phase='buy';state.pending=1;current().pos=1;buy();!canBuild(current(),tiles[1])&&state.economy.upgrade===null`);
+ test('Landing again on own property grants an upgrade',`land();canBuild(current(),tiles[1])&&state.economy.upgrade.tile===1`);
+ test('Upgrading consumes the opportunity and exact cash',`const cash=current().cash;build(1,false);state.props[1].level===1&&current().cash===cash-cost(tiles[1])&&state.economy.upgrade.used`);
+ test('Repeated build cannot charge twice',`const cash=current().cash;build(1,false);state.props[1].level===1&&current().cash===cash`);
+ test('Refresh preserves consumed opportunity',`state=normalizeSave(state);!canBuild(current(),tiles[1])&&state.economy.upgrade.used`);
+ test('Returning later unlocks another level without same color',`current().pos=2;land();current().pos=1;land();build(1,false);state.props[1].level===2&&state.props[2].owner===null`);
+ test('Isolated uneven level two survives save validation',`state=normalizeSave(state);state.props[1].level===2`);
+ test('Another return unlocks level three without group',`land();build(1,false);state.props[1].level===3&&normalizeSave(state).props[1].level===3`);
+ test('Max level four blocks further purchases',`land();build(1,false);land();!canBuild(current(),tiles[1])&&state.props[1].level===4&&buildReason(current(),tiles[1]).includes('最高')`);
+ test('Merely passing own property cannot upgrade it',`state=makeGame();state.props[1].owner=0;current().pos=2;land();!canBuild(current(),tiles[1])`);
+ test('Cash shortage gives a clear reason and no charge',`state=makeGame();state.props[1].owner=0;current().pos=1;land();current().cash=0;build(1,false);state.props[1].level===0&&buildReason(current(),tiles[1]).includes('现金不足')`);
+ test('Mortgaged arrival gives no opportunity',`state=makeGame();state.props[1]={owner:0,level:0,mortgage:true};current().pos=1;land();!state.economy.upgrade&&!canBuild(current(),tiles[1])`);
+ test('Opportunity expires on end turn',`state=makeGame({mode:'local'});state.props[1].owner=0;current().pos=1;land();endTurn();state.economy.upgrade===null`);
+ test('Cannot build other property while standing on own one',`state=makeGame();state.props[1].owner=0;state.props[2].owner=0;current().pos=1;land();!canBuild(current(),tiles[2])&&canBuild(current(),tiles[1])`);
+ test('Mortgage cancels unconsumed opportunity',`toggleMortgage(1);!state.economy.upgrade&&normalizeSave(state).props[1].mortgage`);
+ test('Redeeming requires a future arrival',`toggleMortgage(1);!canBuild(current(),tiles[1])`);
+ test('Independent building can be sold without color balance',`state=makeGame({mode:'local'});state.props[1]={owner:0,level:1,mortgage:false};state.props[2]={owner:0,level:3,mortgage:false};sellBuilding(1);state.props[1].level===0&&normalizeSave(state).props[2].level===3`);
+ test('Own empty tile can be mortgaged despite built neighbor',`toggleMortgage(1);state.props[1].mortgage&&normalizeSave(state).props[2].level===3`);
+ test('Trading undeveloped neighbor preserves independent buildings',`state=makeGame();state.props[1]={owner:1,level:3,mortgage:false};state.props[2].owner=1;tradeable(2,1)&&transferProperty(2,1000,0,1)&&normalizeSave(state).props[1].level===3`);
+ test('Unknown development rules are rejected',`state=makeGame();state.economy.development='invented';let rejected=false;try{normalizeSave(state)}catch(e){rejected=true}rejected`);
+ test('Fabricated mismatched opportunity is rejected',`state=makeGame();state.props[1].owner=0;state.economy.upgrade={player:0,tile:1,round:1,used:false};let rejected=false;try{normalizeSave(state)}catch(e){rejected=true}rejected`);
+ test('Old v5 portfolio games keep immediate single-property building',`state=makeGame({development:'portfolio'});state.props[1].owner=0;!landingRules()&&canBuild(current(),tiles[1])&&normalizeSave(state).economy.development===undefined`);
+ test('Classic games retain full-set requirement',`state=makeGame({economy:false});state.props[1].owner=0;!landingRules()&&!canBuild(current(),tiles[1])`);
+ // Actual roll calls land and grants the opportunity. No synthetic UI callback.
+ vm.runInContext(`state=makeGame();state.props[1].owner=0;current().pos=31;Math.random=()=>0`,ctx);await vm.runInContext('roll()',ctx);
+ test('Real roll arriving on owned tile grants an opportunity',`current().pos===1&&canBuild(current(),tiles[1])`);
+ const createEngine=require('./server/engine.cjs'),engine=createEngine();let s=engine.init({},['A','B']);s.props[1].owner=0;s.players[0].pos=1;s.phase='end';s.economy.upgrade={player:0,tile:1,round:1,used:false};engine.restore(s);
+ await engine.act(0,'build',{tile:1});assert.equal(engine.snapshot().props[1].level,1);checks++;
+ const restored=createEngine();restored.restore(engine.snapshot());await assert.rejects(()=>restored.act(0,'build',{tile:1}));checks++;
+ await assert.rejects(()=>restored.act(1,'build',{tile:1}));checks++;
+ // Exercise normal AI gameplay through all eight maps and validation on every step.
+ await vm.runInContext(`(async()=>{let seed=20261031;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};for(const map of MAPS){state=makeGame({map:map.id,count:4,limit:20});state.players.forEach(p=>p.ai=true);let steps=0;while(!state.over&&steps++<6000){if(current().cash<0){liquidate(current());if(current().cash<0){bankrupt(current());continue}}if(state.phase==='roll')await roll();else if(state.phase==='auction')auctionAI();else if(state.phase==='trade')resolveOffer(false);else aiStep();normalizeSave(state)}if(!state.over)throw Error('Game stalled '+map.id)}})()`,ctx);checks++;
+ console.log(checks+' landing checks passed');return checks;
+};
+if(require.main===module)module.exports().catch(e=>{console.error(e);process.exitCode=1});
