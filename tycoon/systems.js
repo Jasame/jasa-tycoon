@@ -66,6 +66,7 @@ function showTrade(){
  if($('#offerTrade'))$('#offerTrade').onclick=()=>{
   const i=Number($('#tradeTile').value),amount=Number($('#tradePrice').value),buyer=current(),t=tiles[i],r=state.props[i],seller=state.players[r.owner];
   if(!canManage()||!Number.isSafeInteger(amount)||amount<100||amount>buyer.cash){toast('请输入有效报价，且不能超过现金。');return}
+  if(state.refinement){const why=tradeOfferReason(buyer.id,seller.id);if(why){toast(why);return}noteTradeOffer(buyer.id,seller.id)}
   if(seller.ai){const group=tiles.filter(x=>x.type==='property'&&x.group===t.group);const count=group.filter(x=>state.props[x.i].owner===seller.id).length;const threshold=aiSellingPrice(seller,t);if(amount<threshold){toast(seller.name+' 拒绝了报价。可以提高出价再试。');return}finishTrade(i,amount,buyer.id,seller.id)}
   else{clearTimeout(aiTimer);modal('请交给 '+seller.name+' 确认',`<p>${escapeHTML(buyer.name)} 希望以 ${money(amount)} 收购你的 ${t.name}。接受后地产和现金立即转移。</p><button class="primary" id="acceptTrade">卖方接受交易</button><button class="secondary wide" id="rejectTrade">拒绝</button>`);$('#acceptTrade').onclick=()=>finishTrade(i,amount,buyer.id,seller.id);$('#rejectTrade').onclick=closeModal;}
  };

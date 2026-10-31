@@ -15,7 +15,7 @@ function mapRule(){const rule=MAP_RULES[state.map]||MAP_RULES.legacy;return fast
 function mapBuildCost(t){const base=Math.ceil(t.price*.5/100)*100;return specialRules()&&state.map==='north-america'?Math.ceil(base*.8/100)*100:base}
 function activeStations(p){return owned(p.id).filter(t=>t.type==='station'&&!state.props[t.i].mortgage).length}
 function mapRentFactor(t){return specialRules()&&state.map==='asia'&&t.type==='station'?1.5:1}
-function onPassStart(p){if(state.experience&&activeStations(p)){state.experience.rail[p.id]++;experienceProgress()}if(state.expansion)expansionPassStart(p);if(specialRules()&&state.map==='europe'){const bonus=activeStations(p)*250;if(bonus){p.cash+=bonus;log(p.name+' 获得铁路通票奖励 '+money(bonus)+'。')}}}
+function onPassStart(p){if(state.refinement)refinementPassStart(p);if(state.experience&&activeStations(p)){state.experience.rail[p.id]++;experienceProgress()}if(state.expansion)expansionPassStart(p);if(specialRules()&&state.map==='europe'){const bonus=activeStations(p)*250;if(bonus){p.cash+=bonus;log(p.name+' 获得铁路通票奖励 '+money(bonus)+'。')}}}
 function onTurnStart(p){
  if(!specialRules()||p.out)return;
  let bonus=0;
@@ -79,7 +79,7 @@ function aiTryTrade(p){
   const seller=state.players[state.props[t.i].owner],price=Math.ceil(t.price*1.4/100)*100;
   if(p.cash-price<aiReserve(p))continue;
   if(seller.ai){if(price<aiSellingPrice(seller,t))continue;if(transferProperty(t.i,price,p.id,seller.id)){render();return false}}
-  else{if(state.comfort&&(!state.comfort.aiOffers||state.comfort.rejected.includes(t.i)||state.round-(state.comfort.offerRounds[seller.id]??-100)<6))continue;if(state.comfort)state.comfort.offerRounds[seller.id]=state.round;state.offer={tile:t.i,price,buyer:p.id,seller:seller.id};state.phase='trade';log(p.name+' 向 '+seller.name+' 提出 '+t.name+' 收购报价。');render();return true}
+  else{if(state.refinement&&tradeOfferReason(p.id,seller.id))continue;if(state.comfort&&(!state.comfort.aiOffers||state.comfort.rejected.includes(t.i)||state.round-(state.comfort.offerRounds[seller.id]??-100)<6))continue;if(state.comfort)state.comfort.offerRounds[seller.id]=state.round;if(state.refinement)noteTradeOffer(p.id,seller.id);state.offer={tile:t.i,price,buyer:p.id,seller:seller.id};state.phase='trade';log(p.name+' 向 '+seller.name+' 提出 '+t.name+' 收购报价。');render();return true}
  }
  return false;
 }
