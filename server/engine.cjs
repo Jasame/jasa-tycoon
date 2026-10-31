@@ -7,7 +7,7 @@ const bundle=files.map(f=>fs.readFileSync(path.join(publicPath,f),'utf8')).join(
 render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};
 delay=async()=>{};closeModal=()=>{};
 globalThis.engine={
- init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{p.name=names[i];p.ai=false});return this.snapshot()},
+ init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{const member=typeof names[i]==='string'?{name:names[i]}:names[i];p.name=member.name;p.ai=!!member.bot;p.avatar=AVATARS.some(a=>a.id===member.avatar)?member.avatar:AVATARS[i].id});return this.snapshot()},
  restore(s,{migrate=true}={}){state=JSON.parse(JSON.stringify(s));activateMap(state.map,fastRules());if(migrate)ensureComfort(state)},
  snapshot(){return JSON.parse(JSON.stringify(state))},
  async act(actor,command,arg){
@@ -43,6 +43,14 @@ globalThis.engine={
    if(!r.mortgage&&t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!landingRules()||x.i===i)&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level))throw Error('请先出售同色组全部建筑');toggleMortgage(i);return;
   }
   throw Error('不支持的操作');
+ },
+ botActor(){if(state.over)return null;const id=state.phase==='auction'?state.auction?.bidder:state.phase==='trade'?state.offer?.seller:state.turn;return state.players[id]?.ai?id:null},
+ async botStep(){
+  const id=this.botActor();if(id===null)return;const p=state.players[id];
+  if(state.phase==='auction'){auctionAI();return}
+  if(state.phase==='trade'){const o=state.offer,t=tiles[o.tile];await this.act(id,o.price>=Math.ceil(t.price*1.1/100)*100?'acceptTrade':'rejectTrade');return}
+  if(p.cash<0){liquidate(p);if(p.cash<0){bankrupt(p);return}}
+  if(state.phase==='roll')await this.act(id,'roll');else if(state.phase==='buy'){const t=tiles[state.pending];await this.act(id,p.cash-t.price>=aiReserve(p)&&t.price<=aiValue(p,t)?'buy':'skip')}else if(state.phase==='end'){aiManage(p);await this.act(id,'end')}
  },
  async timeout(){
   if(state.over)return;
