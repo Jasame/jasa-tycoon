@@ -1,0 +1,33 @@
+{
+  "checks": 46,
+  "reports": [
+    {
+      "players": 2,
+      "limit": 12,
+      "steps": 69,
+      "rounds": 12,
+      "bankrupt": 0
+    },
+    {
+      "players": 2,
+      "limit": 60,
+      "steps": 326,
+      "rounds": 60,
+      "bankrupt": 0
+    },
+    {
+      "players": 4,
+      "limit": 12,
+      "steps": 148,
+      "rounds": 12,
+      "bankrupt": 0
+    },
+    {
+      "players": 4,
+      "limit": 60,
+      "steps": 590,
+      "rounds": 60,
+      "bankrupt": 0
+    }
+  ]
+}
