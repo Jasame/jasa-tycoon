@@ -1,0 +1,34 @@
+{
+  "games": 144,
+  "maps": 9,
+  "turnLimit": 20,
+  "note": "Seeded rule-based AI games; useful for regressions, not a prediction of human win rates. Net worth ranking uses the shared engine valuation.",
+  "reports": [
+    {
+      "mode": "V6 classic",
+      "games": 72,
+      "meanSteps": 239,
+      "meanBankruptPlayers": 0,
+      "leaderAt8DidNotWin": 35,
+      "bottomAt8Won": 11,
+      "meanFinalWealthPerPlayer": 20248,
+      "meanBuildingLevels": 3.64
+    },
+    {
+      "mode": "V7 strategy",
+      "games": 72,
+      "meanSteps": 234,
+      "meanBankruptPlayers": 0,
+      "leaderAt8DidNotWin": 42,
+      "bottomAt8Won": 9,
+      "meanFinalWealthPerPlayer": 22148,
+      "meanBuildingLevels": 7.29,
+      "careerWins": {
+        "architect": 17,
+        "traveler": 19,
+        "banker": 23,
+        "merchant": 13
+      }
+    }
+  ]
+}
