@@ -18,13 +18,14 @@ class Rooms{
  engine(room){if(!this.engines.has(room.code)){const engine=createEngine();engine.restore(room.game);this.engines.set(room.code,engine)}return this.engines.get(room.code)}
  limit(ip,kind){const key=ip+':'+kind,time=now(),bucket=this.buckets.get(key)||{start:time,count:0};if(time-bucket.start>60000){bucket.start=time;bucket.count=0}bucket.count++;this.buckets.set(key,bucket);if(bucket.count>(kind==='create'?8:kind==='join'?30:kind==='poll'?600:180))throw fail('操作较频繁，请稍后再试',429);if(this.buckets.size>10000)for(const [k,b]of this.buckets)if(time-b.start>60000)this.buckets.delete(k)}
  member(room,token){if(typeof token!=='string'||token.length<32||token.length>128)throw fail('请重新加入或恢复你的座位',401);const h=hash(token),m=room.members.find(x=>!x.bot&&x.hash===h);if(!m)throw fail('座位凭证已失效',401);m.seen=now();return m}
- view(room,m){return {code:room.code,revision:room.revision,status:room.status,me:room.members.indexOf(m),host:room.host===m.id,options:room.options,allReady:room.members.length>=2&&room.members.every(x=>x.ready&&(x.bot||now()-x.seen<20000)),social:(room.social||[]).filter(x=>now()-x.at<12000),members:room.members.map(x=>({id:x.id,name:x.name,host:x.id===room.host,cosmetics:this.cosmetics(x.cosmetics),ready:x.ready,bot:!!x.bot,avatar:x.avatar||'fox',career:x.career||'architect',online:!!x.bot||now()-x.seen<20000})),deadline:room.deadline,serverTime:now(),game:room.game||null,ack:m.actions.slice(-100)}}
+ view(room,m){return {version:'10.0.0',code:room.code,revision:room.revision,status:room.status,me:room.members.indexOf(m),host:room.host===m.id,options:room.options,allReady:room.members.length>=2&&room.members.every(x=>x.ready&&(x.bot||now()-x.seen<20000)),social:(room.social||[]).filter(x=>now()-x.at<12000),members:room.members.map(x=>({id:x.id,name:x.name,host:x.id===room.host,cosmetics:this.cosmetics(x.cosmetics),ready:x.ready,bot:!!x.bot,avatar:x.avatar||'fox',career:x.career||'architect',online:!!x.bot||now()-x.seen<20000})),deadline:room.deadline,serverTime:now(),game:room.game||null,ack:m.actions.slice(-100)}}
+ duration(room){return room.options.experience&&room.options.limit===12?Math.min(this.turnMs,90000):this.turnMs}
  avatar(value){return ['fox','cat','panda','rabbit','bear','frog','owl','penguin','dog','koala','tiger','raccoon'].includes(value)?value:'fox'}
  cosmetics(x){return {pawn:['classic','gem','star'].includes(x?.pawn)?x.pawn:'classic',dice:['classic','mint','ink'].includes(x?.dice)?x.dice:'classic',frame:['none','laurel','orbit'].includes(x?.frame)?x.frame:'none'}}
  botMember(room){const i=[1,2,3,4].find(i=>!room.members.some(x=>x.name==='AI '+i));return {id:crypto.randomUUID(),name:'AI '+i,avatar:['panda','cat','rabbit','bear'][i-1],career:['architect','traveler','banker','merchant'][i-1],bot:true,ready:true,seen:now(),actions:[]}}
  career(value){return ['architect','traveler','banker','merchant'].includes(value)?value:'architect'}
  name(value){const name=String(value||'').trim().replace(/[\u0000-\u001f]/g,'').slice(0,12);if(!name)throw fail('请输入玩家昵称');return name}
- options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {community:input?.community===true,experience:input?.experience===true,pace:input?.pace==='quick'?'quick':'standard',personality:['builder','traveler','steady'].includes(input?.personality)?input.personality:'mixed',difficulty:['easy','normal','expert'].includes(input?.difficulty)?input.difficulty:'normal',expansion:input?.expansion===true,map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,12,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
+ options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {refinement:input?.refinement===true,community:input?.community===true,experience:input?.experience===true,pace:input?.pace==='quick'?'quick':'standard',personality:['builder','traveler','steady'].includes(input?.personality)?input.personality:'mixed',difficulty:['easy','normal','expert'].includes(input?.difficulty)?input.difficulty:'normal',expansion:input?.expansion===true,map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,12,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
  async handle(method,route,body,token,ip){return this.transaction(async()=>{
   this.limit(ip,route==='create'?'create':route==='join'?'join':route==='state'?'poll':'action');
   if(route==='create'){
@@ -61,15 +62,15 @@ class Rooms{
    else if(route==='start'){
     if(room.status!=='lobby'||room.host!==m.id)throw fail('只有房主可以开始对局',403);
     if(room.members.length<2||room.members.some(x=>!x.ready||!x.bot&&now()-x.seen>20000))throw fail('至少两名玩家在线并准备后才能开始');
-    const engine=createEngine();room.game=engine.init(room.options,room.members.map(x=>({name:x.name,bot:!!x.bot,avatar:x.avatar,career:x.career,cosmetics:x.cosmetics})));room.status=body.countdown?'countdown':'playing';room.deadline=now()+(body.countdown?3000:this.turnMs);this.engines.set(code,engine);
+    const engine=createEngine();room.game=engine.init(room.options,room.members.map(x=>({name:x.name,bot:!!x.bot,avatar:x.avatar,career:x.career,cosmetics:x.cosmetics})));room.status=body.countdown?'countdown':'playing';room.deadline=now()+(body.countdown?3000:this.duration(room));this.engines.set(code,engine);
    }
    else if(route==='action'){
     if(room.status!=='playing')throw fail('请等待房主开始');
-    const allowed=['roll','buy','skip','end','bail','bankrupt','build','sell','mortgage','bid','pass','offerTrade','acceptTrade','rejectTrade','card','travel','project'];if(!allowed.includes(body.command))throw fail('不支持的操作');
+    const allowed=['roll','buy','skip','end','bail','bankrupt','build','sell','mortgage','bid','pass','offerTrade','acceptTrade','rejectTrade','card','travel','project','tradePrefs','challenge','route'];if(!allowed.includes(body.command))throw fail('不支持的操作');
     const before=room.game,key=g=>g.turn+':'+g.phase+':'+(g.auction?.bidder??'')+':'+(g.offer?.seller??'');
     const engine=this.engine(room);await engine.act(room.members.indexOf(m),body.command,body.arg);engine.noteAction();room.game=engine.snapshot();
     // Asset management does not let a player extend the turn indefinitely.
-    if(key(before)!==key(room.game)||['roll','bid','pass','acceptTrade','rejectTrade'].includes(body.command))room.deadline=now()+this.turnMs;
+    if(key(before)!==key(room.game)||['roll','bid','pass','acceptTrade','rejectTrade'].includes(body.command))room.deadline=now()+this.duration(room);
     if(room.game.over){room.status='finished';room.deadline=0}
    }else throw fail('不支持的请求',404);
    m.actions.push(body.actionId);m.actions=m.actions.slice(-100);room.revision++;room.updated=now();this.persist();return this.view(room,m);
@@ -78,8 +79,8 @@ class Rooms{
  expire(){for(const [code,r] of this.rooms){if(r.updated<now()-(r.status==='lobby'?DAY:7*DAY)){this.rooms.delete(code);this.engines.delete(code)}}}
  async tick(){return this.transaction(async()=>{
   let changed=false;const previousRooms=JSON.stringify([...this.rooms.values()]);
-  for(const r of this.rooms.values()){if(r.status==='countdown'&&r.deadline<=now()){if(r.members.some(m=>!m.bot&&now()-m.seen>20000)){r.status='lobby';r.game=null;r.deadline=0;this.engines.delete(r.code)}else{r.status='playing';r.deadline=now()+this.turnMs}r.revision++;r.updated=now();changed=true;continue}if(r.status==='playing'&&r.deadline&&(r.deadline<=now()||this.engine(r).botActor()!==null)){
-   const previous=JSON.stringify(r);try{const engine=this.engine(r);const isBot=engine.botActor()!==null;if(isBot){for(let step=0;step<(r.game.experience?(r.game.experience.pace==='quick'?6:3):1)&&engine.botActor()!==null;step++){await engine.botStep();engine.noteAction()}}else {await engine.timeout();engine.noteAction(true)}r.game=engine.snapshot();if(!isBot)r.game.logs.unshift({text:'等待超时，服务器已执行默认操作。',round:r.game.round});r.game.logs=r.game.logs.slice(0,50);engine.restore(r.game);r.revision++;r.updated=now();r.deadline=r.game.over?0:now()+this.turnMs;if(r.game.over)r.status='finished';changed=true}catch(e){this.rooms.set(r.code,JSON.parse(previous));this.engines.delete(r.code);throw e}
+  for(const r of this.rooms.values()){if(r.status==='countdown'&&r.deadline<=now()){if(r.members.some(m=>!m.bot&&now()-m.seen>20000)){r.status='lobby';r.game=null;r.deadline=0;this.engines.delete(r.code)}else{r.status='playing';r.deadline=now()+this.duration(r)}r.revision++;r.updated=now();changed=true;continue}if(r.status==='playing'&&r.deadline&&(r.deadline<=now()||this.engine(r).botActor()!==null)){
+   const previous=JSON.stringify(r);try{const engine=this.engine(r);const isBot=engine.botActor()!==null;if(isBot){for(let step=0;step<(r.game.experience?(r.game.experience.pace==='quick'?6:3):1)&&engine.botActor()!==null;step++){await engine.botStep();engine.noteAction()}}else {await engine.timeout();engine.noteAction(true)}r.game=engine.snapshot();if(!isBot)r.game.logs.unshift({text:'等待超时，服务器已执行默认操作。',round:r.game.round});r.game.logs=r.game.logs.slice(0,50);engine.restore(r.game);r.revision++;r.updated=now();r.deadline=r.game.over?0:now()+this.duration(r);if(r.game.over)r.status='finished';changed=true}catch(e){this.rooms.set(r.code,JSON.parse(previous));this.engines.delete(r.code);throw e}
   }
   }
   if(changed)try{this.persist()}catch(e){this.rooms=new Map(JSON.parse(previousRooms).map(r=>[r.code,r]));this.engines.clear();throw e}
@@ -90,7 +91,7 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  function send(status,data){res.writeHead(status,headers);res.end(JSON.stringify(data))}
  try{
   const url=new URL(req.url,'http://localhost');
-  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'9.0.0'});return}
+  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'10.0.0'});return}
   const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart|rematch|transferHost|fillBots)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;

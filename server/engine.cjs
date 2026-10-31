@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const publicPath=fs.existsSync(path.join(__dirname,'core'))?path.join(__dirname,'core'):path.join(__dirname,'../tycoon');
-const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','community.js','saves.js'];
+const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','community.js','refinement.js','saves.js'];
 const game=fs.readFileSync(path.join(publicPath,'game.js'),'utf8').split("$('#roll').onclick=")[0];
 const bundle=files.map(f=>fs.readFileSync(path.join(publicPath,f),'utf8')).join('\n')+'\n'+game+`
 render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};
@@ -13,6 +13,7 @@ globalThis.engine={
  noteAction(timeout=false){if(state.community){state.community.actions++;if(timeout)state.community.timeouts++;recordCash()}},
  async act(actor,command,arg){
   if(state.over)throw Error('本局已结束');
+  if(command==='tradePrefs'){setTradeQuiet(actor,arg?.quiet);return}
   const turn=state.turn===actor;
   if(command==='bid'||command==='pass'){if(state.phase!=='auction'||state.auction.bidder!==actor)throw Error('还没轮到你竞价');auctionBid(command==='bid');return}
   if(command==='acceptTrade'||command==='rejectTrade'){
@@ -23,6 +24,8 @@ globalThis.engine={
   }
   if(!turn||state.phase==='auction'||state.phase==='trade')throw Error('请等待你的回合');
   const p=current();
+  if(command==='challenge'){startComeback(p);return}
+  if(command==='route'){selectMapRoute(p,arg?.route);return}
   if(command==='card'){useStrategyCard(p,arg?.index,arg?.move);return}
   if(command==='travel'){takeBranch(p,arg?.destination);return}
   if(command==='project'){startRiskProject(p,arg?.stake);return}
@@ -37,6 +40,7 @@ globalThis.engine={
   if(command==='offerTrade'){
    const price=arg.price,seller=r.owner;
    if(p.cash<0||!Number.isSafeInteger(price)||price<100||price>p.cash||seller===null||seller===actor||!tradeable(i,seller))throw Error('报价无效，或该地产暂不可交易');
+   if(state.refinement){const why=tradeOfferReason(actor,seller);if(why)throw Error(why);noteTradeOffer(actor,seller)}
    state.offer={tile:i,price,buyer:actor,seller,resume:state.phase};state.phase='trade';log(p.name+' 向 '+state.players[seller].name+' 提出 '+t.name+' 收购报价。');return;
   }
   if(r.owner!==actor)throw Error('你不是这处地产的业主');
@@ -53,6 +57,7 @@ globalThis.engine={
   const id=this.botActor();if(id===null)return;const p=state.players[id];
   if(state.phase==='auction'){auctionAI();return}
   if(state.phase==='trade'){const o=state.offer,t=tiles[o.tile];await this.act(id,o.price>=Math.ceil(t.price*1.1/100)*100?'acceptTrade':'rejectTrade');return}
+  if(state.refinement)refinementAI(p);
   if(state.expansion)expansionAI(p);
   if(p.cash<0){liquidate(p);if(p.cash<0){bankrupt(p);return}}
   if(state.phase==='roll')await this.act(id,'roll');else if(state.phase==='buy'){const t=tiles[state.pending];await this.act(id,p.cash-t.price>=aiReserve(p)&&t.price<=aiValue(p,t)?'buy':'skip')}else if(state.phase==='end'){aiManage(p);await this.act(id,'end')}
