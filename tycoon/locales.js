@@ -1059,6 +1059,7 @@ Object.assign(EN_TEXT,Object.fromEntries(`
 服务暂时不可用|Service is temporarily unavailable.
 `.trim().split('\n').map(line=>{const i=line.indexOf('|');return [line.slice(0,i),line.slice(i+1)]})));
 Object.assign(EN_TEXT,{'新局':'New game','起步 · 到站升级 · 当前进度自动备份。':'starting cash · arrival upgrades · current game backed up.','中文':'Chinese','切换为中文':'Switch to Chinese','暂不升级':'Skip upgrade'});
+Object.assign(EN_TEXT,{'定位本回合棋子':'Locate active piece','定位我的棋子':'Locate my piece','本回合棋子':'Active piece','我的棋子':'My piece','棋子':'Piece','本回合':'Active','定位':'Locate','我':'Me'});
 delete EN_TEXT['第'];
 let englishPattern;
 function rebuildEnglishPattern(){englishPattern=new RegExp(Object.keys(EN_TEXT).filter(Boolean).sort((a,b)=>b.length-a.length).map(escapeRegex).join('|'),'g')}

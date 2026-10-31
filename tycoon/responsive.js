@@ -11,7 +11,7 @@ boardToolbar.append(boardHint,zoomButton);boardViewport.before(boardToolbar);
 zoomButton.onclick=()=>{
  const zoom=boardShell.dataset.zoom!=='in';boardShell.dataset.zoom=zoom?'in':'out';zoomButton.textContent=zoom?'返回全景':'放大棋盘';zoomButton.setAttribute('aria-pressed',String(zoom));
  if(zoom)requestAnimationFrame(()=>{
-  const me=typeof onlineRoom!=='undefined'&&onlineRoom?.game?onlineRoom.me:state.turn;
+  const me=typeof onlineRoom!=='undefined'&&onlineRoom?.game?onlineRoom.me:state.mode==='local'?state.turn:0;
   const tile=$('#board').querySelectorAll('.tile')[state.players[me]?.pos||0];if(tile){const rect=tile.getBoundingClientRect(),view=boardViewport.getBoundingClientRect();boardViewport.scrollLeft+=rect.left-view.left+rect.width/2-view.width/2}
  });else boardViewport.scrollLeft=0;refreshDeviceControls();
 };
