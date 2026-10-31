@@ -35,14 +35,14 @@ function expansionTurn(p){const e=state.expansion,a=expansionPlayer(p);if(!a||p.
  if(a.lastTurn===state.round)return;a.lastTurn=state.round;
  if(a.loan&&state.round>=a.loan.due){p.cash-=a.loan.repay;expansionNote('repay',p,-a.loan.repay);log(p.name+' 归还紧急融资 '+money(a.loan.repay)+'。');a.loan=null}
  if(a.project&&state.round>=a.project.due){const win=Math.random()<.55,payout=Math.round(a.project.stake*(win?1.6:.4));p.cash+=payout;expansionNote('project',p,payout-a.project.stake);log(p.name+' 风险项目结算，收回 '+money(payout)+'。');a.project=null}
- if(a.career==='banker'&&state.round>1)p.cash+=60;
+ if(a.career==='banker'&&state.round>1){p.cash+=60;if(state.community)recordCash('reward')}
  const fee=Math.min(400,expansionEvent()[3]*Math.min(2,owned(p.id).filter(t=>state.props[t.i].level>0).length));if(fee){p.cash-=fee;log(p.name+' 支付地图养护费 '+money(fee)+'。')}
  if(state.round%4===0)drawStrategyCard(p);
  if(!a.recoveryUsed&&state.round>=6&&isUnderdog(p)&&p.cash<3000){a.recoveryUsed=true;a.recovery={start:a.visited.length,deadline:state.round+3,done:false,expired:false};log(p.name+' 获得复兴任务：四回合内探索两处新地点。')}
  expansionProgress(p);expansionRecord();
 }
 function drawStrategyCard(p){const a=expansionPlayer(p);if(!a||a.drawRound===state.round)return;a.drawRound=state.round;if(a.hand.length<3)a.hand.push(Object.keys(STRATEGY_CARDS)[Math.floor(Math.random()*4)])}
-function expansionPassStart(p){const a=expansionPlayer(p);if(!a)return;const bonus=a.career==='traveler'?250:a.career==='merchant'?-150:0;p.cash+=bonus;drawStrategyCard(p)}
+function expansionPassStart(p){const a=expansionPlayer(p);if(!a)return;const bonus=a.career==='traveler'?250:a.career==='merchant'?-150:0;p.cash+=bonus;if(state.community)recordCash('start');drawStrategyCard(p)}
 function expansionLanding(p,t){const a=expansionPlayer(p);if(!a)return;if(['property','station'].includes(t.type)&&!a.visited.includes(t.i))a.visited.push(t.i);expansionProgress(p)}
 function expansionBuilt(p){const a=expansionPlayer(p);if(!a)return;a.coupon=0;a.builds++;expansionNote('build',p);expansionProgress(p)}
 function expansionRentDue(p,amount){const a=expansionPlayer(p);if(!a||!a.insurance||amount<=0)return amount;const rebate=Math.min(amount,a.insurance);a.insurance=0;log(p.name+' 使用租金保险抵扣 '+money(rebate)+'。');return amount-rebate}
@@ -59,7 +59,7 @@ function branchDestinations(p){return !p.jail&&[0,8,16,24].includes(p.pos)?[p.po
 function takeBranch(p,destination){expansionGuard(p,['roll']);const a=expansionPlayer(p);if(p.cash<300||a.fixedMove||!branchDestinations(p).includes(destination))throw Error('支线仅在路口开放，需300且未使用定向移动');p.cash-=300;p.pos=destination;log(p.name+' 搭乘支线前往 '+tiles[destination].name+'，支付 ¥300，不领取起点奖励。');land()}
 function startRiskProject(p,stake){expansionGuard(p,['end']);const a=expansionPlayer(p);if(a.project||a.projectUses>=2||![2000,4000].includes(stake)||p.cash<stake+2000)throw Error('项目需保留2000现金，且全局最多两次');p.cash-=stake;a.project={stake,due:state.round+3};a.projectUses++;expansionNote('invest',p,-stake);log(p.name+' 投入风险项目 '+money(stake)+'，三回合后结算。')}
 function expansionTrade(buyer,seller,price,t){if(!state.expansion)return;if(price>=t.price*.6)for(const p of [buyer,seller]){expansionPlayer(p).trades++;expansionNote('trade',p,p.id===buyer.id?-price:price);expansionProgress(p)}}
-function expansionFinish(){const e=state.expansion;if(!e||e.finished)return;e.finished=true;settleExpansionContest();for(const p of state.players){const a=expansionPlayer(p);if(p.out)continue;if(a.project){p.cash+=a.project.stake;a.project=null}if(a.loan){p.cash-=a.loan.repay;a.loan=null}expansionProgress(p)}expansionRecord()}
+function expansionFinish(){const e=state.expansion;if(!e||e.finished)return;e.finished=true;settleExpansionContest();for(const p of state.players){const a=expansionPlayer(p);if(p.out)continue;if(a.project){p.cash+=a.project.stake;if(state.community)recordCash('other');a.project=null}if(a.loan){p.cash-=a.loan.repay;if(state.community)recordCash('finance');a.loan=null}expansionProgress(p)}expansionRecord()}
 function expansionBankrupt(p){const a=expansionPlayer(p);if(a){a.loan=null;a.project=null;a.hand=[]}}
 function expansionAI(p){const a=expansionPlayer(p);if(!a||p.out)return;const use=(id,arg)=>{const i=a.hand.indexOf(id);if(i<0||a.cardRound===state.round)return false;try{useStrategyCard(p,i,arg);return true}catch(e){return false}};
  if(p.cash<1200&&!a.loan)use('loan');
