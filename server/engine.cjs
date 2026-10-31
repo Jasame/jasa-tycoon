@@ -8,7 +8,7 @@ render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=
 delay=async()=>{};closeModal=()=>{};
 globalThis.engine={
  init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{p.name=names[i];p.ai=false});return this.snapshot()},
- restore(s){state=JSON.parse(JSON.stringify(s));activateMap(state.map,fastRules())},
+ restore(s,{migrate=true}={}){state=JSON.parse(JSON.stringify(s));activateMap(state.map,fastRules());if(migrate)ensureComfort(state)},
  snapshot(){return JSON.parse(JSON.stringify(state))},
  async act(actor,command,arg){
   if(state.over)throw Error('本局已结束');

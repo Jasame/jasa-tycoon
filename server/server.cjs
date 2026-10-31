@@ -10,7 +10,7 @@ class Rooms{
   const file=path.join(dir,'rooms.json');
   if(fs.existsSync(file)){
    const saved=JSON.parse(fs.readFileSync(file,'utf8'));if(saved.version!==1||!Array.isArray(saved.rooms))throw Error('Unsupported room data');
-   for(const r of saved.rooms){if(r.updated>now()-7*DAY){r.members.forEach(m=>m.seen=0);this.rooms.set(r.code,r)}}
+   let migrated=false;for(const r of saved.rooms){if(r.updated>now()-7*DAY){r.members.forEach(m=>m.seen=0);if(r.game&&!r.game.comfort){const engine=createEngine();engine.restore(r.game);r.game=engine.snapshot();r.revision++;migrated=true;}this.rooms.set(r.code,r)}}if(migrated)this.persist();
   }
  }
  transaction(fn){const next=this.queue.then(fn);this.queue=next.catch(()=>{});return next}
@@ -75,7 +75,7 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  function send(status,data){res.writeHead(status,headers);res.end(JSON.stringify(data))}
  try{
   const url=new URL(req.url,'http://localhost');
-  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'5.1.0'});return}
+  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'5.2.0'});return}
   const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
