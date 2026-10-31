@@ -1,5 +1,5 @@
 'use strict';
-let onlineSession=null,onlineRoom=null,onlineTimer=null,onlineConnected=false,onlinePending=null,onlineSending=false,onlineOffset=0,onlineBusy=false;
+let onlineSession=null,onlineRoom=null,onlineTimer=null,onlineConnected=false,onlinePending=null,onlineSending=false,onlineOffset=0,onlineBusy=false,onlinePolling=false,onlineLastConfirmed='';
 const ONLINE_SESSION='world-tycoon-online-session',ONLINE_RECENT='world-tycoon-online-seats';
 const offline={render,renderAction,save,scheduleAI,canManage,roll,buy,skipBuy,endTurn,bail,build,sellBuilding,toggleMortgage,confirmBankrupt,auctionBid,showTrade,showAssets,setup,showSaveCenter};
 function onlineStore(){
@@ -29,19 +29,19 @@ function renderOnlinePanel(){
  if(focusedId&&$('#'+focusedId)&&!$('#'+focusedId).disabled)$('#'+focusedId).focus({preventScroll:true});
 }
 function applyOnline(result,force=false){
- if(!onlineSession||result.code!==onlineSession.code)return;
+ if(!onlineSession||result.code!==onlineSession.code||onlineRoom&&result.revision<onlineRoom.revision)return;
  const changed=!onlineRoom||result.revision!==onlineRoom.revision;onlineRoom=result;onlineConnected=true;onlineOffset=result.serverTime-Date.now();
- if(onlinePending&&result.ack?.includes(onlinePending.actionId)){onlinePending=null;onlineStore();$('#modal').hidden=true}
+ if(onlinePending&&result.ack?.includes(onlinePending.actionId)){onlinePending=null;onlineLastConfirmed='上次操作已确认';onlineStore();$('#modal').hidden=true}
  const assetOpen=!$('#modal').hidden&&!!$('#onlineAssets'),oldScroll=$('.modal').scrollTop,assetFocus=document.activeElement?.dataset?.assetKey;
  if(result.game&&(changed||force)){clearTimeout(aiTimer);state=result.game;activateMap(state.map,fastRules());selected=-1;render();if(state.over)showResults();else if(assetOpen&&!$('#modal').hidden){showAssets();$('.modal').scrollTop=oldScroll;if(assetFocus){const next=$('#onlineAssets').querySelector('[data-asset-key="'+assetFocus+'"]');if(next&&!next.disabled)next.focus({preventScroll:true})}}}
  else{renderOnlinePanel();if(result.game)renderAction();else if(changed)renderAction()}
 }
 async function pollOnline(){
- clearTimeout(onlineTimer);if(!onlineSession)return;
+ clearTimeout(onlineTimer);if(!onlineSession||onlinePolling)return;onlinePolling=true;
  const session=onlineSession;
  try{const result=await onlineAPI('state',{},session);if(session!==onlineSession)return;applyOnline(result);if(onlinePending&&!onlineSending)await dispatchOnline()}
  catch(e){if(session!==onlineSession)return;onlineConnected=false;if(e.status===401||e.status===404){toast(e.message+'，可返回本地对局后重新加入。')}renderOnlinePanel();renderAction()}
- finally{if(session===onlineSession)onlineTimer=setTimeout(pollOnline,onlineConnected?2000:5000)}
+ finally{onlinePolling=false;if(session===onlineSession)onlineTimer=setTimeout(pollOnline,onlineConnected?2000:5000)}
 }
 async function enterOnline(result,token){
  if(!onlineSession&&!archiveCurrent())return;
@@ -49,7 +49,7 @@ async function enterOnline(result,token){
 }
 async function dispatchOnline(){
  if(!onlinePending||!onlineSession||onlineSending)return;onlineSending=true;const pending=onlinePending,session=onlineSession;
- try{const result=await onlineAPI(pending.route,pending,session);if(session!==onlineSession)return;onlinePending=null;onlineStore();$('#modal').hidden=true;applyOnline(result,true)}
+ try{const result=await onlineAPI(pending.route,pending,session);if(session!==onlineSession)return;onlinePending=null;onlineLastConfirmed='上次操作已确认';onlineStore();$('#modal').hidden=true;applyOnline(result,true)}
  catch(e){if(session!==onlineSession)return;if(e.status){onlinePending=null;onlineStore();toast(e.message);if(e.status===409)await pollOnline()}else{onlineConnected=false;toast('操作结果待确认，正在重连。请勿重复操作。')}}
  finally{onlineSending=false;renderOnlinePanel();if(onlineSession)renderAction()}
 }
@@ -118,7 +118,7 @@ function showOnline(){
  let recent=[];try{recent=JSON.parse(localStorage.getItem(ONLINE_RECENT)||'[]')}catch(e){}
  const invited=new URLSearchParams(location.search).get('room')||'';
  modal('邀请朋友，环球同行',`<p>支持 2–4 人远程对局。创建房间分享邀请码，朋友加入并准备后即可开局。服务器统一结算，支持刷新重连。</p><label>你的昵称<input id="onlineName" maxlength="12" value="旅人"></label><label>卡通头像<select id="onlineAvatar">${AVATARS.map(a=>'<option value="'+a.id+'"'+(a.id===state.players[0]?.avatar?' selected':'')+'>'+a.name+'</option>').join('')}</select></label><div class="online-create"><label>地图<select id="onlineMap">${MAPS.map(m=>`<option value="${m.id}">${m.name} · ${MAP_RULES[m.id].title}</option>`).join('')}</select></label><label>房间人数<select id="onlineCapacity"><option value="4">最多 4 人</option><option value="3">最多 3 人</option><option value="2">2 人</option></select></label><label>对局回合<select id="onlineLimit"><option value="20">竞速 · 20 回合</option><option value="30">经营 · 30 回合</option><option value="0">直到最后一人</option></select></label><button class="primary" id="createOnline">创建房间</button></div><div class="online-join"><label>朋友的房间码<input id="onlineCode" maxlength="8" value="${escapeHTML(invited.toUpperCase().replace(/[^A-F0-9]/g,'').slice(0,8))}" placeholder="8 位房间码"></label><button class="wide" id="joinOnline">加入朋友的房间</button></div>${recent.length?'<h3>恢复已保存的座位</h3><div id="recentSeats">'+recent.map((s,i)=>`<button class="wide" data-reconnect="${i}">${escapeHTML(s.name)} · ${escapeHTML(s.code)}</button>`).join('')+'</div>':''}<p class="save-note">座位凭证保存在此浏览器，邀请链接只包含房间码。等待中的房间保留 24 小时，已开局进度在最后一次操作后保留 7 天。不同浏览器可通过邀请码加入。</p>`);
- const join=async route=>{if(onlineBusy)return;onlineBusy=true;$('#createOnline').disabled=true;$('#joinOnline').disabled=true;try{const data={name:$('#onlineName').value,avatar:$('#onlineAvatar').value,career:$('#onlineCareer')?.value||'architect',expansion:$('#onlineRuleMode')?.value!=='classic',map:$('#onlineMap').value,capacity:Number($('#onlineCapacity').value),limit:Number($('#onlineLimit').value),code:$('#onlineCode').value.trim().toUpperCase()};const result=await onlineAPI(route,data,null);await enterOnline(result,result.token)}catch(e){toast(e.message)}finally{onlineBusy=false;if($('#createOnline'))$('#createOnline').disabled=false;if($('#joinOnline'))$('#joinOnline').disabled=false}};
+ const join=async route=>{if(onlineBusy)return;onlineBusy=true;$('#createOnline').disabled=true;$('#joinOnline').disabled=true;try{const data={experience:true,pace:$('#onlinePace')?.value||'standard',difficulty:$('#onlineDifficulty')?.value||'normal',personality:$('#onlinePersonality')?.value||'mixed',name:$('#onlineName').value,avatar:$('#onlineAvatar').value,career:$('#onlineCareer')?.value||'architect',expansion:$('#onlineRuleMode')?.value!=='classic',map:$('#onlineMap').value,capacity:Number($('#onlineCapacity').value),limit:Number($('#onlineLimit').value),code:$('#onlineCode').value.trim().toUpperCase()};const result=await onlineAPI(route,data,null);await enterOnline(result,result.token)}catch(e){toast(e.message)}finally{onlineBusy=false;if($('#createOnline'))$('#createOnline').disabled=false;if($('#joinOnline'))$('#joinOnline').disabled=false}};
  $('#createOnline').onclick=()=>join('create');$('#joinOnline').onclick=()=>join('join');
  document.querySelectorAll('[data-reconnect]').forEach(b=>b.onclick=async()=>{const seat=recent[Number(b.dataset.reconnect)];try{const result=await onlineAPI('state',{},seat);await enterOnline(result,seat.token)}catch(e){toast(e.message)}});
 }

@@ -77,5 +77,5 @@ function normalizeExpansion(input,n,round){if(input==null)return undefined;const
   out.players.push(clean);
  }
  let last=0;for(const h of e.history){if(!integer(h.round,1,round)||h.round<last||!Array.isArray(h.values)||!Array.isArray(h.cash)||h.values.length!==n||h.cash.length!==n||[...h.values,...h.cash].some(v=>!integer(v,-1e9,1e9)))throw Error('回顾数据无效');last=h.round;out.history.push({round:h.round,values:[...h.values],cash:[...h.cash]})}
- for(const h of e.highlights){if(!['goal','contest','project','repay','loan','invest','trade','build','recovery'].includes(h.type)||!integer(h.player,0,n-1)||!integer(h.round,1,round)||!integer(h.value,-1e9,1e9))throw Error('关键时刻数据无效');out.highlights.push({type:h.type,player:h.player,round:h.round,value:h.value})}return out;
+ for(const h of e.highlights){if(!['goal','contest','project','repay','loan','invest','trade','build','recovery','focus'].includes(h.type)||!integer(h.player,0,n-1)||!integer(h.round,1,round)||!integer(h.value,-1e9,1e9))throw Error('关键时刻数据无效');out.highlights.push({type:h.type,player:h.player,round:h.round,value:h.value})}return out;
 }

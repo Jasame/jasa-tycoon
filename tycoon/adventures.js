@@ -28,6 +28,7 @@ function missionProgress(p,id){
 }
 function landmarkActive(owner,group){const members=tiles.filter(t=>t.type==='property'&&t.group===group);return members.length>0&&members.every(t=>{const r=state.props[t.i];return r.owner===owner&&!r.mortgage&&r.level>=2})}
 function checkAdventures(p){
+ if(state.experience)experienceProgress();
  if(!hasAdventure()||p.out)return;
  const a=adventurePlayer(p);
  for(const id of state.adventure.missions)if(!a.completed.includes(id)&&missionProgress(p,id)>=JOURNEY_MISSIONS[id].target){a.completed.push(id);p.cash+=600;log(p.name+' 完成旅程任务「'+JOURNEY_MISSIONS[id].title+'」，获得 ¥600。')}

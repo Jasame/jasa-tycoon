@@ -15,7 +15,7 @@ function mapRule(){const rule=MAP_RULES[state.map]||MAP_RULES.legacy;return fast
 function mapBuildCost(t){const base=Math.ceil(t.price*.5/100)*100;return specialRules()&&state.map==='north-america'?Math.ceil(base*.8/100)*100:base}
 function activeStations(p){return owned(p.id).filter(t=>t.type==='station'&&!state.props[t.i].mortgage).length}
 function mapRentFactor(t){return specialRules()&&state.map==='asia'&&t.type==='station'?1.5:1}
-function onPassStart(p){if(state.expansion)expansionPassStart(p);if(specialRules()&&state.map==='europe'){const bonus=activeStations(p)*250;if(bonus){p.cash+=bonus;log(p.name+' 获得铁路通票奖励 '+money(bonus)+'。')}}}
+function onPassStart(p){if(state.experience&&activeStations(p)){state.experience.rail[p.id]++;experienceProgress()}if(state.expansion)expansionPassStart(p);if(specialRules()&&state.map==='europe'){const bonus=activeStations(p)*250;if(bonus){p.cash+=bonus;log(p.name+' 获得铁路通票奖励 '+money(bonus)+'。')}}}
 function onTurnStart(p){
  if(!specialRules()||p.out)return;
  let bonus=0;
@@ -47,14 +47,14 @@ function journeyStatus(){
 function aiReserve(p){
  const baseline=state.difficulty==='easy'?3200:state.difficulty==='expert'?1100:2000;
  const rents=tiles.filter(t=>state.props[t.i].owner!==null&&state.props[t.i].owner!==p.id).map(t=>rent(t)).sort((a,b)=>b-a);
- return Math.max(baseline,Math.min(6500,(rents[0]||0)*1.4+(rents[1]||0)*.4));
+ const reserve=Math.max(baseline,Math.min(6500,(rents[0]||0)*1.4+(rents[1]||0)*.4));return state.experience?experienceReserve(p,reserve):reserve;
 }
 function aiValue(p,t){
- if(t.type==='station')return Math.round(t.price*(1+activeStations(p)*.3)*(state.map==='asia'&&specialRules()?1.15:1));
+ if(t.type==='station')return Math.round(t.price*(state.experience&&aiPersonality(p)==='traveler'?1.18:1)*(1+activeStations(p)*.3)*(state.map==='asia'&&specialRules()?1.15:1));
  const group=tiles.filter(x=>x.type==='property'&&x.group===t.group),others=group.filter(x=>x.i!==t.i);
  const mine=others.filter(x=>state.props[x.i].owner===p.id).length;
  const blocks=state.players.some(x=>x.id!==p.id&&!x.out&&others.every(t=>state.props[t.i].owner===x.id));
- return Math.round(t.price*(1+mine/group.length*.6+(mine===others.length?.55:0)+(blocks?.12:0)));
+ return Math.round(t.price*(state.experience?(aiPersonality(p)==='builder'?1.07:aiPersonality(p)==='steady'?.98:1):1)*(1+mine/group.length*.6+(mine===others.length?.55:0)+(blocks?.12:0)));
 }
 function aiSellingPrice(p,t){
  if(t.type==='station')return Math.round(t.price*(activeStations(p)>1?1.8:1.25));
@@ -97,7 +97,7 @@ function aiManage(p){
  const mortgaged=owned(p.id).filter(t=>state.props[t.i].mortgage).sort((a,b)=>aiValue(p,b)-aiValue(p,a));
  for(const t of mortgaged){const fee=Math.ceil(t.price*55/100);if(p.cash-fee>=reserve){p.cash-=fee;state.props[t.i].mortgage=false;log(p.name+' 赎回 '+t.name+'。');break}}
  const possible=owned(p.id).filter(t=>canBuild(p,t)&&p.cash-paymentCost(p,t)>=reserve).sort((a,b)=>b.price/cost(b)-a.price/cost(a));
- if(possible.length&&state.difficulty!=='easy')build(possible[0].i,false);
+ if(possible.length&&(state.difficulty!=='easy'||state.experience&&p.cash-paymentCost(p,possible[0])>=reserve*1.5))build(possible[0].i,false);
 }
 const GUIDE=[
  ['欢迎成为城市合伙人','先选一张地图，再决定人数与 AI 风格。每张地图都有专属经营机制；旧存档保留旧规则。','选择地图'],
@@ -117,7 +117,7 @@ function showGuide(step=0){
 // v5 rules are opt-in per game; existing saves and rooms retain their economy.
 function fastRules(){return state?.economy?.v===5}
 function startGrant(){return fastRules()?1400:2000}
-function maturityFactor(){return !fastRules()||state.round<6?1:state.round<12?1.15:1.3}
+function maturityFactor(){if(state.experience&&fastRules()&&state.round>=20)return state.round>=40?2:state.round>=30?1.75:1.5;return !fastRules()||state.round<6?1:state.round<12?1.15:1.3}
 function nextUpkeepRound(p=current()){return state.round>=8&&state.round%4===0&&state.economy?.fees[p.id]!==state.round?state.round:Math.max(8,Math.floor(state.round/4+1)*4)}
 function upkeepFee(p){
  const portfolio=owned(p.id).reduce((n,t)=>n+t.price,0),levels=owned(p.id).reduce((n,t)=>n+state.props[t.i].level,0);
