@@ -8,7 +8,7 @@ render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=
 delay=async()=>{};closeModal=()=>{};
 globalThis.engine={
  init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{p.name=names[i];p.ai=false});return this.snapshot()},
- restore(s){state=JSON.parse(JSON.stringify(s));activateMap(state.map)},
+ restore(s){state=JSON.parse(JSON.stringify(s));activateMap(state.map,fastRules())},
  snapshot(){return JSON.parse(JSON.stringify(state))},
  async act(actor,command,arg){
   if(state.over)throw Error('本局已结束');
@@ -36,11 +36,11 @@ globalThis.engine={
    state.offer={tile:i,price,buyer:actor,seller,resume:state.phase};state.phase='trade';log(p.name+' 向 '+state.players[seller].name+' 提出 '+t.name+' 收购报价。');return;
   }
   if(r.owner!==actor)throw Error('你不是这处地产的业主');
-  if(command==='build'){if(!canBuild(p,t))throw Error('不能升级，请检查现金、同色组与建筑均衡');build(i,false);return}
-  if(command==='sell'){if(!r.level||tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>r.level))throw Error('请先出售同色组最高等级建筑');sellBuilding(i);return}
+  if(command==='build'){if(!canBuild(p,t))throw Error(buildReason(p,t));build(i,false);return}
+  if(command==='sell'){if(!r.level||tiles.some(x=>x.type==='property'&&x.group===t.group&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level>r.level))throw Error('请先出售同色组最高等级建筑');sellBuilding(i);return}
   if(command==='mortgage'){
    if(r.mortgage&&p.cash<Math.ceil(t.price*55/100))throw Error('现金不足以赎回');
-   if(!r.mortgage&&t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level))throw Error('请先出售同色组全部建筑');toggleMortgage(i);return;
+   if(!r.mortgage&&t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level))throw Error('请先出售同色组全部建筑');toggleMortgage(i);return;
   }
   throw Error('不支持的操作');
  },

@@ -20,7 +20,7 @@ class Rooms{
  member(room,token){if(typeof token!=='string'||token.length<32||token.length>128)throw fail('请重新加入或恢复你的座位',401);const h=hash(token),m=room.members.find(x=>x.hash===h);if(!m)throw fail('座位凭证已失效',401);m.seen=now();return m}
  view(room,m){return {code:room.code,revision:room.revision,status:room.status,me:room.members.indexOf(m),host:room.host===m.id,options:room.options,members:room.members.map(x=>({id:x.id,name:x.name,ready:x.ready,online:now()-x.seen<20000})),deadline:room.deadline,serverTime:now(),game:room.game||null,ack:m.actions.slice(-100)}}
  name(value){const name=String(value||'').trim().replace(/[\u0000-\u001f]/g,'').slice(0,12);if(!name)throw fail('请输入玩家昵称');return name}
- options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,30,60].includes(Number(input?.limit))?Number(input.limit):30}}
+ options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
  async handle(method,route,body,token,ip){return this.transaction(async()=>{
   this.limit(ip,route==='create'?'create':route==='join'?'join':route==='state'?'poll':'action');
   if(route==='create'){
@@ -75,7 +75,7 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  function send(status,data){res.writeHead(status,headers);res.end(JSON.stringify(data))}
  try{
   const url=new URL(req.url,'http://localhost');
-  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'4.3.0'});return}
+  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'5.0.0'});return}
   const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
