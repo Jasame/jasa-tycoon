@@ -1,0 +1,25 @@
+{
+  "checks": 24,
+  "reports": [
+    {
+      "economy": "v4",
+      "games": 64,
+      "meanFirstBuildRound": 4.91,
+      "meanSteps": 284.47,
+      "meanBankrupt": 0,
+      "leadChangedAfterRound8": 30,
+      "bottomAt8Won": 4,
+      "aidRecipients": 0
+    },
+    {
+      "economy": "v5",
+      "games": 64,
+      "meanFirstBuildRound": 1.11,
+      "meanSteps": 244.61,
+      "meanBankrupt": 0.14,
+      "leadChangedAfterRound8": 30,
+      "bottomAt8Won": 5,
+      "aidRecipients": 126
+    }
+  ]
+}

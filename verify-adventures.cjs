@@ -6,6 +6,7 @@ module.exports=async function verifyAdventures(){
  const el={hidden:true,classList:{add(){},remove(){}}};
  const context=vm.createContext({console,setTimeout:()=>0,clearTimeout(){},document:{querySelector:()=>el},localStorage:{getItem:()=>null,setItem(){}}});
  vm.runInContext(core+'\nrender=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};',context);
+ vm.runInContext('const originalMakeGame=makeGame;makeGame=(opts={})=>originalMakeGame({...opts,economy:false})',context);
  let checks=0;
  function test(name,code){assert.equal(vm.runInContext('{'+code+'}',context),true,name);checks++;console.log('PASS '+name)}
  test('New games share exactly three unique missions for all seats',`state=makeGame();state.adventure.missions.length===3&&new Set(state.adventure.missions).size===3&&state.adventure.missions.includes('explorer')&&state.adventure.missions.includes('collector')`);

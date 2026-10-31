@@ -1,4 +1,6 @@
-# 环球大富翁 · World Tycoon v4.4
+# 环球大富翁 · World Tycoon v5.0
+
+v5.0 创业竞速已上线：单块开发、维护风险、逆风援助、八张主题地图地价重排。详见 [规则设计与验证](BALANCE-NOTES.md) 与 [模拟报告](BALANCE-REPORT.json)。旧存档和已开局房间保留原规则。
 
 在线游玩：https://jasa.hk/tycoon/
 
