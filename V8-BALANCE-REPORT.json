@@ -1,0 +1,113 @@
+{
+  "v7": {
+    "version": "V7",
+    "games": 162,
+    "maps": 9,
+    "playerCounts": [
+      2,
+      3,
+      4
+    ],
+    "limits": [
+      12,
+      30,
+      60
+    ],
+    "reports": [
+      {
+        "limit": 12,
+        "games": 54,
+        "meanSteps": 108,
+        "bankruptPlayers": 0,
+        "gamesWithDebt": 0,
+        "midgameLeaderDidNotWin": 20,
+        "midgameLastWon": 8,
+        "meanFinalNetWorth": 18633
+      },
+      {
+        "limit": 30,
+        "games": 54,
+        "meanSteps": 240,
+        "bankruptPlayers": 2,
+        "gamesWithDebt": 5,
+        "midgameLeaderDidNotWin": 30,
+        "midgameLastWon": 15,
+        "meanFinalNetWorth": 28817
+      },
+      {
+        "limit": 60,
+        "games": 54,
+        "meanSteps": 413,
+        "bankruptPlayers": 27,
+        "gamesWithDebt": 34,
+        "midgameLeaderDidNotWin": 33,
+        "midgameLastWon": 17,
+        "meanFinalNetWorth": 32425
+      }
+    ],
+    "note": "Seeded AI regression games, not human win rates. Early wealth and late risk must be assessed separately. Quick-game minutes are an estimate, not measured by this simulation."
+  },
+  "v8": {
+    "version": "V8",
+    "games": 162,
+    "maps": 9,
+    "playerCounts": [
+      2,
+      3,
+      4
+    ],
+    "limits": [
+      12,
+      30,
+      60
+    ],
+    "reports": [
+      {
+        "limit": 12,
+        "games": 54,
+        "meanSteps": 123,
+        "bankruptPlayers": 0,
+        "gamesWithDebt": 0,
+        "midgameLeaderDidNotWin": 21,
+        "midgameLastWon": 8,
+        "meanFinalNetWorth": 18874,
+        "personalityWins": {
+          "builder": 24,
+          "traveler": 17,
+          "steady": 13
+        }
+      },
+      {
+        "limit": 30,
+        "games": 54,
+        "meanSteps": 255,
+        "bankruptPlayers": 3,
+        "gamesWithDebt": 5,
+        "midgameLeaderDidNotWin": 27,
+        "midgameLastWon": 10,
+        "meanFinalNetWorth": 29093,
+        "personalityWins": {
+          "builder": 21,
+          "traveler": 19,
+          "steady": 14
+        }
+      },
+      {
+        "limit": 60,
+        "games": 54,
+        "meanSteps": 418,
+        "bankruptPlayers": 47,
+        "gamesWithDebt": 34,
+        "midgameLeaderDidNotWin": 28,
+        "midgameLastWon": 11,
+        "meanFinalNetWorth": 32680,
+        "personalityWins": {
+          "builder": 23,
+          "traveler": 18,
+          "steady": 13
+        }
+      }
+    ],
+    "note": "Seeded AI regression games, not human win rates. Early wealth and late risk must be assessed separately. Quick-game minutes are an estimate, not measured by this simulation."
+  }
+}
