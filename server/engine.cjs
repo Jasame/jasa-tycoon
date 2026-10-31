@@ -1,13 +1,13 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const publicPath=fs.existsSync(path.join(__dirname,'core'))?path.join(__dirname,'core'):path.join(__dirname,'../tycoon');
-const files=['atlas.js','systems.js','journey.js','adventures.js','saves.js'];
+const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','saves.js'];
 const game=fs.readFileSync(path.join(publicPath,'game.js'),'utf8').split("$('#roll').onclick=")[0];
 const bundle=files.map(f=>fs.readFileSync(path.join(publicPath,f),'utf8')).join('\n')+'\n'+game+`
 render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};
 delay=async()=>{};closeModal=()=>{};
 globalThis.engine={
- init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{const member=typeof names[i]==='string'?{name:names[i]}:names[i];p.name=member.name;p.ai=!!member.bot;p.avatar=AVATARS.some(a=>a.id===member.avatar)?member.avatar:AVATARS[i].id});return this.snapshot()},
+ init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{const member=typeof names[i]==='string'?{name:names[i]}:names[i];p.name=member.name;p.ai=!!member.bot;if(state.expansion&&Object.hasOwn(CAREERS,member.career))state.expansion.players[i].career=member.career;p.avatar=AVATARS.some(a=>a.id===member.avatar)?member.avatar:AVATARS[i].id});if(state.expansion)expansionTurn(current());return this.snapshot()},
  restore(s,{migrate=true}={}){state=JSON.parse(JSON.stringify(s));activateMap(state.map,fastRules());if(migrate)ensureComfort(state)},
  snapshot(){return JSON.parse(JSON.stringify(state))},
  async act(actor,command,arg){
@@ -22,6 +22,9 @@ globalThis.engine={
   }
   if(!turn||state.phase==='auction'||state.phase==='trade')throw Error('请等待你的回合');
   const p=current();
+  if(command==='card'){useStrategyCard(p,arg?.index,arg?.move);return}
+  if(command==='travel'){takeBranch(p,arg?.destination);return}
+  if(command==='project'){startRiskProject(p,arg?.stake);return}
   if(command==='roll'){if(state.phase!=='roll'||p.cash<0)throw Error('现在不能掷骰');await roll();return}
   if(command==='buy'){if(state.phase!=='buy'||p.cash<tiles[state.pending].price)throw Error('不能购买或现金不足');buy();return}
   if(command==='skip'){if(state.phase!=='buy')throw Error('当前没有待购地产');skipBuy();return}
@@ -49,6 +52,7 @@ globalThis.engine={
   const id=this.botActor();if(id===null)return;const p=state.players[id];
   if(state.phase==='auction'){auctionAI();return}
   if(state.phase==='trade'){const o=state.offer,t=tiles[o.tile];await this.act(id,o.price>=Math.ceil(t.price*1.1/100)*100?'acceptTrade':'rejectTrade');return}
+  if(state.expansion)expansionAI(p);
   if(p.cash<0){liquidate(p);if(p.cash<0){bankrupt(p);return}}
   if(state.phase==='roll')await this.act(id,'roll');else if(state.phase==='buy'){const t=tiles[state.pending];await this.act(id,p.cash-t.price>=aiReserve(p)&&t.price<=aiValue(p,t)?'buy':'skip')}else if(state.phase==='end'){aiManage(p);await this.act(id,'end')}
  },
@@ -60,9 +64,9 @@ globalThis.engine={
   if(state.phase==='roll')await this.act(p.id,'roll');else if(state.phase==='buy')await this.act(p.id,'skip');else if(state.phase==='end')await this.act(p.id,'end');
  }
 };`;
-module.exports=function createEngine(){
+module.exports=function createEngine({random}={}){
  const element={hidden:true,classList:{add(){},remove(){}}};
- const math=Object.create(Math);math.random=()=>crypto.randomInt(0,0x100000000)/0x100000000;
+ const math=Object.create(Math);math.random=random||(()=>crypto.randomInt(0,0x100000000)/0x100000000);
  const context=vm.createContext({Math:math,console,setTimeout:()=>0,clearTimeout(){},document:{querySelector:()=>element}});
  vm.runInContext(bundle,context,{timeout:1000});return context.engine;
 };
