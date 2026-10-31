@@ -75,7 +75,7 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  function send(status,data){res.writeHead(status,headers);res.end(JSON.stringify(data))}
  try{
   const url=new URL(req.url,'http://localhost');
-  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'5.2.0'});return}
+  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'5.3.0'});return}
   const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
