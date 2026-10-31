@@ -1,15 +1,16 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const publicPath=fs.existsSync(path.join(__dirname,'core'))?path.join(__dirname,'core'):path.join(__dirname,'../tycoon');
-const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','saves.js'];
+const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','community.js','saves.js'];
 const game=fs.readFileSync(path.join(publicPath,'game.js'),'utf8').split("$('#roll').onclick=")[0];
 const bundle=files.map(f=>fs.readFileSync(path.join(publicPath,f),'utf8')).join('\n')+'\n'+game+`
 render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};
 delay=async()=>{};closeModal=()=>{};
 globalThis.engine={
- init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{const member=typeof names[i]==='string'?{name:names[i]}:names[i];p.name=member.name;p.ai=!!member.bot;if(state.expansion&&Object.hasOwn(CAREERS,member.career))state.expansion.players[i].career=member.career;p.avatar=AVATARS.some(a=>a.id===member.avatar)?member.avatar:AVATARS[i].id});if(state.expansion)expansionTurn(current());return this.snapshot()},
+ init(options,names){state=makeGame({...options,count:names.length,mode:'local'});state.players.forEach((p,i)=>{const member=typeof names[i]==='string'?{name:names[i]}:names[i];p.name=member.name;p.ai=!!member.bot;if(state.expansion&&Object.hasOwn(CAREERS,member.career))state.expansion.players[i].career=member.career;if(member.cosmetics)p.cosmetics=safeCosmetics(member.cosmetics);p.avatar=AVATARS.some(a=>a.id===member.avatar)?member.avatar:AVATARS[i].id});if(state.expansion)expansionTurn(current());return this.snapshot()},
  restore(s,{migrate=true}={}){state=JSON.parse(JSON.stringify(s));activateMap(state.map,fastRules());if(migrate)ensureComfort(state)},
- snapshot(){return JSON.parse(JSON.stringify(state))},
+ snapshot(){if(state.community)recordCash();return JSON.parse(JSON.stringify(state))},
+ noteAction(timeout=false){if(state.community){state.community.actions++;if(timeout)state.community.timeouts++;recordCash()}},
  async act(actor,command,arg){
   if(state.over)throw Error('本局已结束');
   const turn=state.turn===actor;
