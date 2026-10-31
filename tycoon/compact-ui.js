@@ -54,7 +54,7 @@ function selectedMapPreview(){
 function polishSetup(){
  const body=$('#modalBody'),picker=$('#mapPicker'),start=$('#startGame');if(!picker||!start)return;
  $('.modal').classList.add('setup-modal');$('#modalTitle').textContent='开始新对局';$('#modeInput').options[0].textContent='AI 对战';$('#modeInput').options[1].textContent='同屏轮流';
- const intro=document.createElement('p');intro.className='setup-intro';intro.textContent='20 回合 · ¥10,000 起步 · 再次到访自有房产可升级。当前进度会自动备份。';
+ const intro=document.createElement('p');intro.className='setup-intro';intro.textContent='新局 ¥10,000 起步 · 到站升级 · 当前进度自动备份。';
  const basic=document.createElement('div');basic.className='setup-basic';for(const id of ['nameInput','modeInput','countInput'])basic.append($('#'+id).closest('label'));
  const mapTitle=document.createElement('h3');mapTitle.textContent='选择地图 · 9 张';
  const preview=document.createElement('p');preview.id='selectedMapPreview';preview.className='selected-map-preview';

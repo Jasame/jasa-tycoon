@@ -178,3 +178,6 @@ function ensureComfort(s){
 function assetViewer(){return state.mode==='ai'?state.players[0]:current()}
 
 function mortgageReason(p,t){const r=state.props[t.i];if(r.mortgage)return p.cash<Math.ceil(t.price*.55)?'现金不足以赎回':'';return t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!landingRules()||x.i===t.i)&&state.props[x.i].level>0)?(landingRules()?'请先出售本地产建筑':'请先出售同色组全部建筑'):''}
+
+function quietAuction(p){return !!p&&!p.ai&&state.mode==='ai'&&!!state.comfort?.quietAuctions&&!!state.players[state.turn]?.ai&&state.phase==='auction'}
+function setupDefaults(){return {nameInput:state.players[0]?.name||'你',modeInput:state.mode==='local'?'local':'ai',countInput:state.players.length,difficultyInput:state.difficulty||'normal',speedInput:state.speed===25?25:95,limitInput:[0,20,30,60].includes(state.limit)?state.limit:20}}
