@@ -1,0 +1,26 @@
+{
+  "version": "10.0.0",
+  "localChecks": 463,
+  "serverHTTPChecks": 5,
+  "newChecks": 62,
+  "flows": [
+    {
+      "map": "world",
+      "steps": 176,
+      "rounds": 12,
+      "bankrupt": 0
+    },
+    {
+      "map": "europe",
+      "steps": 172,
+      "rounds": 12,
+      "bankrupt": 0
+    },
+    {
+      "map": "antarctica",
+      "steps": 157,
+      "rounds": 12,
+      "bankrupt": 0
+    }
+  ]
+}
