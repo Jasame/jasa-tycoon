@@ -1,9 +1,21 @@
-World Tycoon v4 remote multiplayer
+World Tycoon / 环球大富翁 — V10.0 deployment entry
 
-Requires Node.js 20 and a persistent backend. Static-only deployment preserves local mode but cannot provide remote rooms.
+Read DEPLOYMENT.md for local play, first installation, same-origin proxy setup,
+persistent room storage, upgrades, backups and rollback details.
 
-Review deploy.sh, server/world-tycoon.service and server/tycoon-online.conf. Run bash deploy.sh prepare, verify the preview, then bash deploy.sh publish.
+Current upgrade script for the existing BaoTa environment:
+  bash deploy-v10.sh prepare
+  bash deploy-v10.sh publish
 
-Backend programs and room data stay outside the public web root. The service binds to loopback port 8912; Nginx proxies /tycoon/api/ over HTTPS.
+This script uses environment-specific paths and an already installed service.
+Do not use historical deploy.sh (V4) as the current V10 upgrade guide.
 
-Run node verify.cjs and node verify-online.cjs before deployment. Back up /var/lib/tycoon-online for room recovery. MIT licensed.
+The frontend needs no build step. The Node.js backend uses built-in modules;
+third-party browser components are bundled locally with their own licenses.
+Remote rooms require a persistent backend and same-origin /tycoon/api/ proxy.
+Static hosting alone supports AI/local play. Use HTTPS in production.
+
+Full validation commands: CONTRIBUTING.md
+Current features: README.md / README.en.md
+Release history: CHANGELOG.md
+Licenses: LICENSE / THIRD-PARTY-NOTICES.md
