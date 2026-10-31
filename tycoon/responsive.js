@@ -24,23 +24,36 @@ const dock=document.createElement('nav');dock.id='mobileDock';dock.className='mo
 dock.innerHTML='<div class="dock-status" id="dockStatus"></div><div class="dock-buttons"><button id="dockPrimary" class="dock-primary"></button><button id="dockAction">查看操作</button><button id="dockAssets">我的资产</button></div>';
 document.body.append(dock);
 function dockSource(){
- if(!$('#roll').hidden)return {button:$('#roll'),label:$('#roll').disabled?'等待回合':current().jail?'掷骰出狱':'掷骰子'};
- if(!$('#end').hidden)return {button:$('#end'),label:'结束回合'};
- const button=[...$('#actionButtons').querySelectorAll('button')].find(b=>!b.disabled);
- return button?{button,label:button.textContent}:{button:null,label:'等待操作'};
+ const choices=[...$('#actionButtons').querySelectorAll('button')];
+ const waiting=label=>({button:null,secondaryButton:null,label,secondaryLabel:'棋盘'});
+ if(busy)return waiting('移动中…');
+ if(typeof onlineSession!=='undefined'&&onlineSession){
+  if(!onlineConnected||onlinePending)return waiting(onlinePending?'确认操作中…':'正在重连…');
+  const actor=state.phase==='auction'?state.auction?.bidder:state.phase==='trade'?state.offer?.seller:state.turn;
+  if(!state.over&&actor!==onlineRoom?.me)return waiting('等待 '+(state.players[actor]?.name||'对方'));
+ }
+ const actor=state.phase==='auction'?state.auction?.bidder:state.phase==='trade'?state.offer?.seller:state.turn;
+ if(!state.over&&state.players[actor]?.ai)return waiting('AI 行动中…');
+ if(state.over||current().cash<0||['buy','auction','trade'].includes(state.phase)){
+  const primary=choices.find(b=>!b.disabled),secondary=choices.find(b=>b!==primary&&!b.disabled);
+  return {button:primary||null,label:primary?.textContent||'等待操作',secondaryButton:secondary||null,secondaryLabel:secondary?.textContent||'棋盘'};
+ }
+ if(!$('#roll').hidden)return {button:$('#roll'),label:$('#roll').disabled?'等待回合':current().jail?'掷骰出狱':'掷骰子',secondaryLabel:'棋盘'};
+ if(!$('#end').hidden)return {button:$('#end'),label:'结束回合',secondaryLabel:'棋盘'};
+ return waiting('等待操作');
 }
 function refreshDeviceControls(){
  const inLobby=typeof onlineSession!=='undefined'&&onlineSession&&(!onlineRoom||onlineRoom.status==='lobby');
  dock.hidden=!compactScreen.matches||!!inLobby;
  document.documentElement.classList.toggle('has-mobile-dock',!dock.hidden);
- const source=dockSource();$('#dockPrimary').textContent=source.label;$('#dockPrimary').disabled=!source.button||source.button.disabled||busy;
+ const source=dockSource();$('#dockPrimary').textContent=source.label;$('#dockPrimary').disabled=!source.button||source.button.disabled||busy;$('#dockAction').textContent=source.secondaryLabel||'棋盘';$('#dockAction').disabled=false;
  const me=typeof onlineRoom!=='undefined'&&onlineRoom?.game?onlineRoom.me:state.turn;
  $('#dockStatus').textContent=state.over?'本局已结束':(typeof onlineSession!=='undefined'&&onlineSession?'联机 · ':'')+current().name+' 的回合 · 第 '+state.round+' 回合';
  $('#dockAssets').disabled=!!inLobby||!state.players[me];
  boardHint.textContent=boardShell.dataset.zoom==='in'?'可左右滑动 · 点击地块查看详情':'点选地块，查看地价与租金';
 }
 $('#dockPrimary').onclick=()=>{const source=dockSource();if(source.button&&!source.button.disabled&&!busy)source.button.click();refreshDeviceControls()};
-$('#dockAction').onclick=()=>$('.action-panel').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+$('#dockAction').onclick=()=>{const source=dockSource();if(source.secondaryButton&&!source.secondaryButton.disabled&&!busy){source.secondaryButton.click();refreshDeviceControls()}else $('.board-shell').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
 $('#dockAssets').onclick=()=>showAssets();
 const deviceRender=render,deviceAction=renderAction;
 render=function(){deviceRender();refreshDeviceControls()};
