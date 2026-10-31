@@ -23,6 +23,7 @@ toolsToggle.onclick=()=>{const open=actions.classList.toggle('tools-open');tools
 const dock=document.createElement('nav');dock.id='mobileDock';dock.className='mobile-dock';dock.setAttribute('aria-label','手机快捷操作');
 dock.innerHTML='<div class="dock-status" id="dockStatus"></div><div class="dock-buttons"><button id="dockPrimary" class="dock-primary"></button><button id="dockAction">查看操作</button><button id="dockAssets">我的资产</button></div>';
 document.body.append(dock);
+function turnCaption(){const id=state.phase==='auction'?state.auction?.bidder:state.phase==='trade'?state.offer?.seller:state.turn;return state.over?'本局已结束':state.players[id]?.name+' · '+(state.phase==='auction'?'正在竞价':state.phase==='trade'?'等待交易答复':'当前回合')+' · 第 '+state.round+' 回合'}
 function dockSource(){
  const choices=[...$('#actionButtons').querySelectorAll('button')];
  const waiting=label=>({button:null,secondaryButton:null,label,secondaryLabel:'棋盘'});
@@ -49,7 +50,7 @@ function refreshDeviceControls(){
  document.documentElement.classList.toggle('has-mobile-dock',!dock.hidden);
  const source=dockSource();$('#dockPrimary').textContent=source.label;$('#dockPrimary').disabled=!source.button||source.button.disabled||busy;$('#dockAction').textContent=source.secondaryLabel||'棋盘';$('#dockAction').disabled=false;
  const me=typeof onlineRoom!=='undefined'&&onlineRoom?.game?onlineRoom.me:state.turn;
- $('#dockStatus').textContent=state.over?'本局已结束':(typeof onlineSession!=='undefined'&&onlineSession?'联机 · ':'')+current().name+' 的回合 · 第 '+state.round+' 回合';
+ $('#dockStatus').textContent=(typeof onlineSession!=='undefined'&&onlineSession?'联机 · ':'')+turnCaption();
  $('#dockAssets').disabled=!!inLobby||!state.players[me];
  boardHint.textContent=boardShell.dataset.zoom==='in'?'可左右滑动 · 点击地块查看详情':'点选地块，查看地价与租金';
 }

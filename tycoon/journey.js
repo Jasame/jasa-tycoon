@@ -63,7 +63,7 @@ function aiSellingPrice(p,t){
 }
 function tradeable(i,sellerId){
  const t=tiles[i],r=state.props[i];return t&&r&&r.owner===sellerId&&!r.mortgage&&!state.players[sellerId]?.out&&
- !(t.type==='property'&&(fastRules()?(r.level>0||!landingRules()&&tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].owner===sellerId&&(state.props[x.i].level>=3||state.props[x.i].level===2&&tiles.filter(y=>y.type==='property'&&y.group===t.group&&y.i!==i&&state.props[y.i].owner===sellerId).length<2))):tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0)));
+ !(t.type==='property'&&((landingRules()||fastRules())?(r.level>0||!landingRules()&&tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].owner===sellerId&&(state.props[x.i].level>=3||state.props[x.i].level===2&&tiles.filter(y=>y.type==='property'&&y.group===t.group&&y.i!==i&&state.props[y.i].owner===sellerId).length<2))):tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0)));
 }
 function transferProperty(i,price,buyerId,sellerId){
  const buyer=state.players[buyerId],seller=state.players[sellerId];
@@ -79,7 +79,7 @@ function aiTryTrade(p){
   const seller=state.players[state.props[t.i].owner],price=Math.ceil(t.price*1.4/100)*100;
   if(p.cash-price<aiReserve(p))continue;
   if(seller.ai){if(price<aiSellingPrice(seller,t))continue;if(transferProperty(t.i,price,p.id,seller.id)){render();return false}}
-  else{state.offer={tile:t.i,price,buyer:p.id,seller:seller.id};state.phase='trade';log(p.name+' 向 '+seller.name+' 提出 '+t.name+' 收购报价。');render();return true}
+  else{if(state.comfort&&(!state.comfort.aiOffers||state.comfort.rejected.includes(t.i)||state.round-(state.comfort.offerRounds[seller.id]??-100)<6))continue;if(state.comfort)state.comfort.offerRounds[seller.id]=state.round;state.offer={tile:t.i,price,buyer:p.id,seller:seller.id};state.phase='trade';log(p.name+' 向 '+seller.name+' 提出 '+t.name+' 收购报价。');render();return true}
  }
  return false;
 }
@@ -89,7 +89,7 @@ function renderOffer(){
 }
 function resolveOffer(accept){
  if(busy||state.over||state.phase!=='trade'||!state.offer)return;
- const o=state.offer;if(accept&&!transferProperty(o.tile,o.price,o.buyer,o.seller)){toast('报价已失效');return}
+ const o=state.offer;if(!accept&&state.comfort&&!state.comfort.rejected.includes(o.tile))state.comfort.rejected.push(o.tile);if(accept&&!transferProperty(o.tile,o.price,o.buyer,o.seller)){toast('报价已失效');return}
  if(!accept)log(state.players[o.seller].name+' 拒绝了收购邀约。');state.offer=null;state.phase='end';render();scheduleAI();
 }
 function aiManage(p){
@@ -136,7 +136,7 @@ function economyTurn(p){
 }
 function buildReason(p,t){
  const r=state.props[t.i];if(t.type!=='property')return '交通枢纽不能建房';
- if(landingRules()){if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';const u=state.economy.upgrade;if(!u||u.player!==p.id||u.tile!==t.i||u.round!==state.round||p.pos!==t.i||state.phase!=='end')return '再次停在这处自有房产后可升级';if(u.used)return '本次到访已处理，下次回来可再升级';if(p.cash<cost(t))return '现金不足，还差 '+money(cost(t)-p.cash);return '';}
+ if(landingRules()){if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';const u=upgradeRecord().upgrade;if(!u||u.player!==p.id||u.tile!==t.i||u.round!==state.round||p.pos!==t.i||state.phase!=='end')return '再次停在这处自有房产后可升级';if(u.used)return '本次到访已处理，下次回来可再升级';if(p.cash<cost(t))return '现金不足，还差 '+money(cost(t)-p.cash);return '';}
  if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';
  const group=tiles.filter(x=>x.type==='property'&&x.group===t.group),mine=group.filter(x=>state.props[x.i].owner===p.id);
  if(!fastRules()&&!setOwned(p,t))return '需集齐同色整组地产';
@@ -159,8 +159,22 @@ function fastChance(p){
  ];
  const text=cards[Math.floor(Math.random()*cards.length)]();log(p.name+' 抽到机遇：'+text);toast(text);
 }
-function economyRulesHTML(){if(landingRules())return '<p>到站建设 · 再次停在自己的房产，就有一次付费升级机会。</p><ol><li>无需集齐同色。必须停在已拥有、未抵押的房产，每次到访最多升一级；最高四级，建造费约为地价一半。刚买下需下次到访，单纯路过不会触发。</li><li>到站后选升级或暂不升级。机会本回合有效，未用完也不能留到下一轮；赎回抵押后仍需下次到访。</li><li>每人 ¥10,000，默认20回合。起点奖励 ¥1,400；基础租金为地价18%，四级倍率为2.4/4.5/7/10。第6、12回合成熟系数为1.15、1.3。</li><li>第8回合起，每4回合结算建筑维护费：每级¥120，加地价总额超¥12,000部分2%，向上百元。资产审计与突发检修随规模收费，预留现金才能持续经营。</li><li>第6回合起，资产低于存活领先者65%、现金不足¥2,000，可获一次¥2,000援助。创业补给、小企业奖励和逆风订单提供追赶机会。</li><li>拍卖每次加价¥500。建筑可独立出售得造价一半；本地产无建筑可抵押得地价50%，赎回付55%。抵押期间不收租。到期按总资产排名，无法偿债可宣布破产。</li><li>新规则仅新开对局启用，旧存档和已开局房间保持原规则。动画不影响操作与结算。</li></ol>';return '<p>创业竞速 · 每人 ¥10,000，默认 20 回合，经过起点 +¥1,400。所有玩家使用相同骰子与规则。</p><ol><li>单块地产可建 1 级；持有至少两块同色地产可建至 2 级；集齐整组可均衡建至 4 级。基础租金为地价 18%，1–4 级为基础租金的 2.4 / 4.5 / 7 / 10 倍。空地整组租金仍翻倍。</li><li>第 6 回合起租金成熟系数 ×1.15，第 12 回合起 ×1.3，与世界新闻及地图效果相乘。枢纽基础租金 ¥450／¥900。</li><li>第 8 回合起，每 4 回合在各自回合开始结算：每级建筑 ¥120，加地价总额超过 ¥12,000 部分的 2%，向上取整至百元。抵押仍计维护规模；请预留现金。</li><li>第 6 回合起，总资产低于存活领先者 65%、现金不足 ¥2,000，可自动获得一次 ¥2,000 逆风援助，每人全局一次。机遇中的小企业奖励与逆风订单也能带来追赶机会。</li><li>资产审计与突发检修按资产或建筑规模收费，扩张过快可能导致现金危机。普通市政税 ¥500；审计至少 ¥500，按超过 ¥10,000 的总资产 6% 加每级建筑 ¥120 计算。</li><li>拍卖每次加价 ¥500。出售建筑得造价一半，抵押得地价一半，赎回付 55%；现金不足先管理资产，无法偿债可破产。期限到按总资产排名。</li></ol>'}
+function economyRulesHTML(){if(landingRules()&&!fastRules())return '<p>本局保留原有现金、地价与租金，已支持到站升级。</p><ol><li>再次停在自有未抵押房产，每次可付费升一级，无需同色，最高四级。升级后不能在同次到访重复建造。</li><li>AI 主动收购默认关闭，可在菜单开启；拒绝后同一地产不再被主动收购。</li><li>资产管理需等待你的回合。地价、租金、建筑造价、起点奖励和结算期限均保留本局原值。</li></ol>';if(landingRules())return '<p>到站建设 · 再次停在自己的房产，就有一次付费升级机会。</p><ol><li>无需集齐同色。必须停在已拥有、未抵押的房产，每次到访最多升一级；最高四级，建造费约为地价一半。刚买下需下次到访，单纯路过不会触发。</li><li>到站后选升级或暂不升级。机会本回合有效，未用完也不能留到下一轮；赎回抵押后仍需下次到访。</li><li>每人 ¥10,000，默认20回合。起点奖励 ¥1,400；基础租金为地价18%，四级倍率为2.4/4.5/7/10。第6、12回合成熟系数为1.15、1.3。</li><li>第8回合起，每4回合结算建筑维护费：每级¥120，加地价总额超¥12,000部分2%，向上百元。资产审计与突发检修随规模收费，预留现金才能持续经营。</li><li>第6回合起，资产低于存活领先者65%、现金不足¥2,000，可获一次¥2,000援助。创业补给、小企业奖励和逆风订单提供追赶机会。</li><li>拍卖每次加价¥500。建筑可独立出售得造价一半；本地产无建筑可抵押得地价50%，赎回付55%。抵押期间不收租。到期按总资产排名，无法偿债可宣布破产。</li><li>已有进度也支持到站升级；原现金、地价、租金和回合保留。AI 主动收购默认关闭；可在菜单开启，拒绝后同一地产不再被主动收购。动画不影响操作与结算。</li></ol>';return '<p>创业竞速 · 每人 ¥10,000，默认 20 回合，经过起点 +¥1,400。所有玩家使用相同骰子与规则。</p><ol><li>单块地产可建 1 级；持有至少两块同色地产可建至 2 级；集齐整组可均衡建至 4 级。基础租金为地价 18%，1–4 级为基础租金的 2.4 / 4.5 / 7 / 10 倍。空地整组租金仍翻倍。</li><li>第 6 回合起租金成熟系数 ×1.15，第 12 回合起 ×1.3，与世界新闻及地图效果相乘。枢纽基础租金 ¥450／¥900。</li><li>第 8 回合起，每 4 回合在各自回合开始结算：每级建筑 ¥120，加地价总额超过 ¥12,000 部分的 2%，向上取整至百元。抵押仍计维护规模；请预留现金。</li><li>第 6 回合起，总资产低于存活领先者 65%、现金不足 ¥2,000，可自动获得一次 ¥2,000 逆风援助，每人全局一次。机遇中的小企业奖励与逆风订单也能带来追赶机会。</li><li>资产审计与突发检修按资产或建筑规模收费，扩张过快可能导致现金危机。普通市政税 ¥500；审计至少 ¥500，按超过 ¥10,000 的总资产 6% 加每级建筑 ¥120 计算。</li><li>拍卖每次加价 ¥500。出售建筑得造价一半，抵押得地价一半，赎回付 55%；现金不足先管理资产，无法偿债可破产。期限到按总资产排名。</li></ol>'}
 
-function landingRules(){return fastRules()&&state.economy.development==='landing'}
-function grantLandingUpgrade(p,t){if(!landingRules())return;state.economy.upgrade=null;const r=state.props[t.i];if(t.type==='property'&&r.owner===p.id&&!r.mortgage&&r.level<4){state.economy.upgrade={player:p.id,tile:t.i,round:state.round,used:false};log(p.name+' 回到 '+t.name+'，获得本次到访的升级机会。')}}
+function landingRules(){return state.comfort?.v===1||fastRules()&&state.economy.development==='landing'}
+function grantLandingUpgrade(p,t){if(!landingRules())return;upgradeRecord().upgrade=null;const r=state.props[t.i];if(t.type==='property'&&r.owner===p.id&&!r.mortgage&&r.level<4){upgradeRecord().upgrade={player:p.id,tile:t.i,round:state.round,used:false};log(p.name+' 回到 '+t.name+'，获得本次到访的升级机会。')}}
 function projectedBaseRent(t){const r=state.props[t.i],next=Math.min(4,r.level+1),base=Math.round(t.price*(fastRules()?.18:.12)/10)*10;return Math.round(base*(fastRules()?[1,2.4,4.5,7,10]:[1,3,6,10,16])[next]*(state.market?.factor||1)*mapRentFactor(t)*maturityFactor()/10)*10}
+
+function upgradeRecord(){return state.comfort||state.economy}
+function ensureComfort(s){
+ if(s.comfort?.v===1)return false;
+ const old=s.economy?.development==='landing',prior=old?s.economy.upgrade:null;
+ s.comfort={v:1,upgrade:prior?{...prior}:null,aiOffers:false,offerRounds:{},rejected:[]};if(old)s.economy.upgrade=null;
+ if(s.phase==='trade'&&s.offer&&s.players[s.offer.buyer]?.ai&&!s.players[s.offer.seller]?.ai){s.offer=null;s.phase='end';s.logs.unshift({text:'已关闭 AI 主动收购，未处理的收购邀约已取消。',round:s.round});}
+ const p=s.players[s.turn],t=tiles[p.pos],r=s.props[p.pos];
+ if(!old&&!s.over&&s.phase==='end'&&t.type==='property'&&r.owner===p.id&&!r.mortgage&&r.level<4&&s.logs.some(l=>l.round===s.round&&l.text===p.name+' 来到 '+t.name+'。')){const arrival=s.logs.findIndex(l=>l.round===s.round&&l.text===p.name+' 来到 '+t.name+'。'),built=s.logs.findIndex(l=>l.round===s.round&&l.text.startsWith(p.name+' 升级 '+t.name+' 至 '));s.comfort.upgrade={player:p.id,tile:p.pos,round:s.round,used:built>=0&&built<arrival};}
+ s.logs.unshift({text:'体验更新：现有进度已支持到站升级；AI 主动收购默认关闭，可在菜单开启。',round:s.round});s.logs=s.logs.slice(0,50);return true;
+}
+function assetViewer(){return state.mode==='ai'?state.players[0]:current()}
+
+function mortgageReason(p,t){const r=state.props[t.i];if(r.mortgage)return p.cash<Math.ceil(t.price*.55)?'现金不足以赎回':'';return t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!landingRules()||x.i===t.i)&&state.props[x.i].level>0)?(landingRules()?'请先出售本地产建筑':'请先出售同色组全部建筑'):''}

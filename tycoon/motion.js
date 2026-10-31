@@ -41,7 +41,7 @@ function moneyFeedback(id,delta){
 }
 function captureMotion(){
  const roll=state.logs.find(x=>x.text.includes(' 掷出了 '));const chance=state.logs.find(x=>x.text.includes('抽到机遇：'));
- return {identity:state.adventure?.runId||state.logs.at(-1)?.text,map:state.map,upgrade:landingRules()?state.economy.upgrade:null,turn:state.turn,round:state.round,over:state.over,cash:state.players.map(p=>p.cash),owners:state.props.map(p=>p.owner),levels:state.props.map(p=>p.level),roll:roll?roll.round+':'+roll.text:'',chance:chance?chance.round+':'+chance.text:''};
+ return {identity:state.adventure?.runId||state.logs.at(-1)?.text,map:state.map,upgrade:landingRules()?upgradeRecord().upgrade:null,turn:state.turn,round:state.round,over:state.over,cash:state.players.map(p=>p.cash),owners:state.props.map(p=>p.owner),levels:state.props.map(p=>p.level),roll:roll?roll.round+':'+roll.text:'',chance:chance?chance.round+':'+chance.text:''};
 }
 const motionRender=render;
 render=function(){

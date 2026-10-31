@@ -85,3 +85,10 @@ new MutationObserver(modalIsolation).observe($('#modal'),{attributes:true,attrib
 $('#closeModal').onclick=()=>closeModal();
 if(!$('#modal').hidden)polishModal();
 modalIsolation();updateCompactUI();
+
+const aiOfferToggle=document.createElement('button');aiOfferToggle.id='aiOfferToggle';extraTools.append(aiOfferToggle);
+function refreshOfferControl(){aiOfferToggle.hidden=!!onlineSession||state.mode!=='ai';aiOfferToggle.textContent=state.comfort?.aiOffers?'AI 收购 · 开启':'AI 收购 · 关闭';aiOfferToggle.setAttribute('aria-pressed',String(!!state.comfort?.aiOffers))}
+aiOfferToggle.onclick=()=>{if(onlineSession||state.mode!=='ai')return;ensureComfort(state);state.comfort.aiOffers=!state.comfort.aiOffers;if(!state.comfort.aiOffers&&state.phase==='trade'&&state.offer&&state.players[state.offer.buyer].ai){resolveOffer(false)}render();toast(state.comfort.aiOffers?'已开启 AI 邀约：至少间隔 6 回合，拒绝的地产不再报价。':'AI 不再主动收购你的地产。你仍可主动发起交易。')};
+const offerControlRender=render;render=function(){offerControlRender();refreshOfferControl()};refreshOfferControl();
+
+const offerControlOnlinePanel=renderOnlinePanel;renderOnlinePanel=function(){offerControlOnlinePanel();refreshOfferControl()};
