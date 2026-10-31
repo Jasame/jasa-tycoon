@@ -1,6 +1,14 @@
-# 环球大富翁 · World Tycoon v4.3
+# 环球大富翁 · World Tycoon v4.4
 
 在线游玩：https://jasa.hk/tycoon/
+
+## v4.4 界面精简
+
+先在 Edge 体验桌面、手机首屏及开局／联机流程，再将棋盘与当前操作提前，次要入口收进菜单。新闻、任务、地标与地图规则集中于“旅程”；开局使用九张地图的紧凑选择，高级设置折叠，开始按钮保留在弹窗底部。联机改为创建／加入两种明确入口，邀请链接直接进入加入页。
+
+手机底栏直接映射当前阶段的两个选择；等待对方、AI 行动与重连时禁止重复提交。弹窗打开时背景不参与键盘焦点导航。
+
+`node verify-interface.cjs` 验证八项底栏操作场景。本次仅更新前端，使用 `bash deploy-interface.sh prepare` 生成 `/tycoon-v44/`，验证后执行 `bash deploy-interface.sh publish`；无需重启联机服务。
 
 ## v4.3 城市故事
 
