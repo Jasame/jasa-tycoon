@@ -37,10 +37,10 @@ globalThis.engine={
   }
   if(r.owner!==actor)throw Error('你不是这处地产的业主');
   if(command==='build'){if(!canBuild(p,t))throw Error(buildReason(p,t));build(i,false);return}
-  if(command==='sell'){if(!r.level||tiles.some(x=>x.type==='property'&&x.group===t.group&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level>r.level))throw Error('请先出售同色组最高等级建筑');sellBuilding(i);return}
+  if(command==='sell'){if(!r.level||!landingRules()&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level>r.level))throw Error('请先出售同色组最高等级建筑');sellBuilding(i);return}
   if(command==='mortgage'){
    if(r.mortgage&&p.cash<Math.ceil(t.price*55/100))throw Error('现金不足以赎回');
-   if(!r.mortgage&&t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level))throw Error('请先出售同色组全部建筑');toggleMortgage(i);return;
+   if(!r.mortgage&&t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&(!landingRules()||x.i===i)&&(!fastRules()||state.props[x.i].owner===actor)&&state.props[x.i].level))throw Error('请先出售同色组全部建筑');toggleMortgage(i);return;
   }
   throw Error('不支持的操作');
  },
