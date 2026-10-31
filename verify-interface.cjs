@@ -7,7 +7,7 @@ module.exports=function verifyInterface(){
  vm.runInContext('function current(){return state.players[state.turn]}\n'+source.slice(source.indexOf('function turnCaption(){'),source.indexOf('function refreshDeviceControls(){')),ctx);
  let count=0;function test(name,code){assert.equal(vm.runInContext('{'+code+'}',ctx),true,name);count++;console.log('PASS '+name)}
  test('Normal turn mirrors the real roll button',`dockSource().button===controls.roll&&dockSource().secondaryLabel==='棋盘'`);
- test('Purchase exposes buy and skip instead of a scroll shortcut',`state.phase='buy';controls.choices=[{textContent:'购买',disabled:false},{textContent:'放弃',disabled:false}];const s=dockSource();s.button===controls.choices[0]&&s.secondaryButton===controls.choices[1]`);
+ test('Purchase exposes buy and skip instead of a scroll shortcut',`state.phase='buy';controls.choices=[{textContent:'購買',dataset:{label:'购买'},disabled:false},{textContent:'放棄',dataset:{label:'放弃'},disabled:false}];const s=dockSource();s.button===controls.choices[0]&&s.secondaryButton===controls.choices[1]&&s.label==='购买'&&s.secondaryLabel==='放弃'`);
  test('Debt management takes priority over ending the turn',`state.phase='end';current().cash=-100;controls.end.hidden=false;controls.choices=[{textContent:'管理资产',disabled:false},{textContent:'宣布破产',disabled:false}];dockSource().button===controls.choices[0]`);
  test('AI and movement cannot dispatch a mirrored action',`current().cash=15000;current().ai=true;const a=!dockSource().button;current().ai=false;busy=true;const b=!dockSource().button;busy=false;a&&b`);
  test('Opponent turn disables primary instead of duplicating asset buttons',`onlineSession={};onlineRoom={me:1};state.phase='buy';state.turn=0;const s=dockSource();!s.button&&s.label==='等待 You'`);
