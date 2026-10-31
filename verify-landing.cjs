@@ -4,6 +4,7 @@ module.exports=async function verifyLanding(){
  const source=['atlas.js','systems.js','journey.js','adventures.js','saves.js','game.js'].map(f=>fs.readFileSync(path.join(__dirname,'tycoon',f),'utf8').split("$('#roll').onclick=")[0]).join('\n');
  const el={hidden:true,classList:{add(){},remove(){}}},ctx=vm.createContext({console,setTimeout:()=>0,clearTimeout(){},document:{querySelector:()=>el}});
  vm.runInContext(source+'\nrender=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};closeModal=()=>{};delay=async()=>{};',ctx);
+ vm.runInContext("const v51MakeGame=makeGame;makeGame=(opts={})=>v51MakeGame({...opts,comfort:false})",ctx);
  let checks=0;const test=(name,code)=>{assert.equal(vm.runInContext('{'+code+'}',ctx),true,name);checks++;console.log('PASS '+name)};
  test('New games opt into landing development',`state=makeGame();landingRules()&&state.economy.upgrade===null`);
  test('Purchasing does not grant an immediate upgrade',`state.phase='buy';state.pending=1;current().pos=1;buy();!canBuild(current(),tiles[1])&&state.economy.upgrade===null`);
@@ -32,7 +33,7 @@ module.exports=async function verifyLanding(){
  // Actual roll calls land and grants the opportunity. No synthetic UI callback.
  vm.runInContext(`state=makeGame();state.props[1].owner=0;current().pos=31;Math.random=()=>0`,ctx);await vm.runInContext('roll()',ctx);
  test('Real roll arriving on owned tile grants an opportunity',`current().pos===1&&canBuild(current(),tiles[1])`);
- const createEngine=require('./server/engine.cjs'),engine=createEngine();let s=engine.init({},['A','B']);s.props[1].owner=0;s.players[0].pos=1;s.phase='end';s.economy.upgrade={player:0,tile:1,round:1,used:false};engine.restore(s);
+ const createEngine=require('./server/engine.cjs'),engine=createEngine();let s=engine.init({comfort:false},['A','B']);s.props[1].owner=0;s.players[0].pos=1;s.phase='end';s.economy.upgrade={player:0,tile:1,round:1,used:false};engine.restore(s);
  await engine.act(0,'build',{tile:1});assert.equal(engine.snapshot().props[1].level,1);checks++;
  const restored=createEngine();restored.restore(engine.snapshot());await assert.rejects(()=>restored.act(0,'build',{tile:1}));checks++;
  await assert.rejects(()=>restored.act(1,'build',{tile:1}));checks++;

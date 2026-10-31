@@ -8,7 +8,7 @@ const memory=new Map(),element={hidden:true,textContent:'',classList:{add(){},re
 const context=vm.createContext({console,setTimeout:()=>0,clearTimeout(){},document:{querySelector:()=>element},localStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)},Date});
 const core=sources[5].split("$('#roll').onclick=")[0];
 vm.runInContext(sources.slice(0,5).join('\n')+'\n'+core+'\nrender=()=>{};toast=()=>{};closeModal=()=>{};scheduleAI=()=>{};showResults=()=>{};',context);
-vm.runInContext('const regressionMakeGame=makeGame;makeGame=(opts={})=>regressionMakeGame({...opts,adventure:false,economy:false})',context);
+vm.runInContext('const regressionMakeGame=makeGame;makeGame=(opts={})=>regressionMakeGame({...opts,adventure:false,economy:false,comfort:false})',context);
 let passed=0;
 function test(name,source){try{assert.equal(vm.runInContext('{'+source+'}',context),true);passed++;console.log('PASS '+name)}catch(e){throw new Error(name+': '+e.message)}}
 test('All eight maps have 32 spaces and 20 distinct properties',`MAPS.every(m=>{state=makeGame({map:m.id});return tiles.length===32&&new Set(tiles.filter(t=>t.type==='property').map(t=>t.name)).size===20})`);

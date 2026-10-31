@@ -4,7 +4,7 @@ module.exports=function verifyInterface(){
  const source=fs.readFileSync(path.join(__dirname,'tycoon/responsive.js'),'utf8');
  const controls={roll:{hidden:false,disabled:false,textContent:'掷骰子'},end:{hidden:true,disabled:false,textContent:'结束回合'},choices:[]};
  const ctx=vm.createContext({state:{turn:0,phase:'roll',over:false,players:[{name:'You',cash:15000,ai:false,jail:0},{name:'Other',cash:15000,ai:false}]},busy:false,onlineSession:null,onlineRoom:null,onlineConnected:true,onlinePending:null,controls,$:s=>s==='#actionButtons'?{querySelectorAll:()=>controls.choices}:controls[s.slice(1)]});
- vm.runInContext('function current(){return state.players[state.turn]}\n'+source.slice(source.indexOf('function dockSource(){'),source.indexOf('function refreshDeviceControls(){')),ctx);
+ vm.runInContext('function current(){return state.players[state.turn]}\n'+source.slice(source.indexOf('function turnCaption(){'),source.indexOf('function refreshDeviceControls(){')),ctx);
  let count=0;function test(name,code){assert.equal(vm.runInContext('{'+code+'}',ctx),true,name);count++;console.log('PASS '+name)}
  test('Normal turn mirrors the real roll button',`dockSource().button===controls.roll&&dockSource().secondaryLabel==='棋盘'`);
  test('Purchase exposes buy and skip instead of a scroll shortcut',`state.phase='buy';controls.choices=[{textContent:'购买',disabled:false},{textContent:'放弃',disabled:false}];const s=dockSource();s.button===controls.choices[0]&&s.secondaryButton===controls.choices[1]`);
@@ -15,6 +15,8 @@ module.exports=function verifyInterface(){
  test('Trade follows the seller who must answer',`state.phase='trade';state.offer={seller:1};controls.choices=[{textContent:'接受',disabled:false},{textContent:'拒绝',disabled:false}];dockSource().secondaryButton===controls.choices[1]`);
  test('Pending and disconnected rooms block primary commands',`onlinePending={};const a=!dockSource().button;onlinePending=null;onlineConnected=false;a&&!dockSource().button`);
  test('Landing decision mirrors upgrade and skip in mobile dock',`onlineSession=null;onlineConnected=true;state.phase='end';controls.roll.hidden=true;controls.end.hidden=false;controls.choices=[{textContent:'升级房屋 · ¥500',disabled:false},{textContent:'暂不升级 · 结束回合',disabled:false}];const s=dockSource();s.button===controls.choices[0]&&s.secondaryButton===controls.choices[1]`);
+ test('Auction status identifies the bidder instead of turn owner',`state.phase='auction';state.turn=0;state.auction={bidder:1};turnCaption().startsWith('Other · ')`);
+ test('Trade status identifies the seller instead of buyer',`state.phase='trade';state.offer={seller:1};turnCaption().startsWith('Other · ')`);
  console.log(count+' interface checks passed');return count;
 };
 if(require.main===module)module.exports();

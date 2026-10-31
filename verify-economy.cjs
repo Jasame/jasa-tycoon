@@ -7,7 +7,7 @@ module.exports=async function verifyEconomy({simulations=64}={}){
  const el={hidden:true,classList:{add(){},remove(){}}};
  const ctx=vm.createContext({Math:math,console,setTimeout:()=>0,clearTimeout(){},document:{querySelector:()=>el}});
  vm.runInContext(source+'\nrender=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};delay=async()=>{};',ctx);
- vm.runInContext("const v50MakeGame=makeGame;makeGame=(opts={})=>v50MakeGame({...opts,development:'portfolio'})",ctx);
+ vm.runInContext("const v50MakeGame=makeGame;makeGame=(opts={})=>v50MakeGame({...opts,development:'portfolio',comfort:false})",ctx);
  let checks=0;const test=(name,code)=>{assert.equal(vm.runInContext('{'+code+'}',ctx),true,name);checks++;console.log('PASS '+name)};
  test('Default is 20 rounds, 10000 cash and fast movement',`state=makeGame();fastRules()&&state.limit===20&&current().cash===10000&&state.speed===25`);
  test('One isolated property can reach level one',`state.props[1].owner=0;build(1,false);state.props[1].level===1&&current().cash===9500`);
@@ -42,8 +42,8 @@ module.exports=async function verifyEconomy({simulations=64}={}){
  }
  assert.ok(reports[1].meanFirstBuildRound<reports[0].meanFirstBuildRound,'Construction must start earlier');checks++;
  assert.ok(reports[1].leadChangedAfterRound8>0,'Leadership must not be locked');checks++;
- const engine=require('./server/engine.cjs')();let s=engine.init({map:'world',development:'portfolio'},['A','B']);s.props[1].owner=0;engine.restore(s);await engine.act(0,'build',{tile:1});assert.equal(engine.snapshot().props[1].level,1);checks++;
- const restored=require('./server/engine.cjs')();restored.restore(engine.snapshot());await assert.rejects(()=>restored.act(1,'build',{tile:1}));checks++;
+ const engine=require('./server/engine.cjs')();let s=engine.init({map:'world',development:'portfolio',comfort:false},['A','B']);s.props[1].owner=0;engine.restore(s,{migrate:false});await engine.act(0,'build',{tile:1});assert.equal(engine.snapshot().props[1].level,1);checks++;
+ const restored=require('./server/engine.cjs')();restored.restore(engine.snapshot(),{migrate:false});await assert.rejects(()=>restored.act(1,'build',{tile:1}));checks++;
  console.log(JSON.stringify({checks,reports},null,2));return {checks,reports};
 };
 if(require.main===module)module.exports().catch(e=>{console.error(e);process.exitCode=1});
