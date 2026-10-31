@@ -15,7 +15,7 @@ function mapRule(){const rule=MAP_RULES[state.map]||MAP_RULES.legacy;return fast
 function mapBuildCost(t){const base=Math.ceil(t.price*.5/100)*100;return specialRules()&&state.map==='north-america'?Math.ceil(base*.8/100)*100:base}
 function activeStations(p){return owned(p.id).filter(t=>t.type==='station'&&!state.props[t.i].mortgage).length}
 function mapRentFactor(t){return specialRules()&&state.map==='asia'&&t.type==='station'?1.5:1}
-function onPassStart(p){if(specialRules()&&state.map==='europe'){const bonus=activeStations(p)*250;if(bonus){p.cash+=bonus;log(p.name+' 获得铁路通票奖励 '+money(bonus)+'。')}}}
+function onPassStart(p){if(state.expansion)expansionPassStart(p);if(specialRules()&&state.map==='europe'){const bonus=activeStations(p)*250;if(bonus){p.cash+=bonus;log(p.name+' 获得铁路通票奖励 '+money(bonus)+'。')}}}
 function onTurnStart(p){
  if(!specialRules()||p.out)return;
  let bonus=0;
@@ -68,7 +68,7 @@ function tradeable(i,sellerId){
 function transferProperty(i,price,buyerId,sellerId){
  const buyer=state.players[buyerId],seller=state.players[sellerId];
  if(!buyer||!seller||buyerId===sellerId||buyer.out||seller.out||!Number.isSafeInteger(price)||price<100||buyer.cash<price||!tradeable(i,sellerId))return false;
- buyer.cash-=price;seller.cash+=price;state.props[i].owner=buyerId;checkAdventures(buyer);
+ buyer.cash-=price;seller.cash+=price;state.props[i].owner=buyerId;checkAdventures(buyer);if(state.expansion)expansionTrade(buyer,seller,price,tiles[i]);
  log(buyer.name+' 以 '+money(price)+' 从 '+seller.name+' 收购 '+tiles[i].name+'。');return true;
 }
 function aiTryTrade(p){
@@ -96,7 +96,7 @@ function aiManage(p){
  const reserve=aiReserve(p);
  const mortgaged=owned(p.id).filter(t=>state.props[t.i].mortgage).sort((a,b)=>aiValue(p,b)-aiValue(p,a));
  for(const t of mortgaged){const fee=Math.ceil(t.price*55/100);if(p.cash-fee>=reserve){p.cash-=fee;state.props[t.i].mortgage=false;log(p.name+' 赎回 '+t.name+'。');break}}
- const possible=owned(p.id).filter(t=>canBuild(p,t)&&p.cash-cost(t)>=reserve).sort((a,b)=>b.price/cost(b)-a.price/cost(a));
+ const possible=owned(p.id).filter(t=>canBuild(p,t)&&p.cash-paymentCost(p,t)>=reserve).sort((a,b)=>b.price/cost(b)-a.price/cost(a));
  if(possible.length&&state.difficulty!=='easy')build(possible[0].i,false);
 }
 const GUIDE=[
@@ -136,7 +136,7 @@ function economyTurn(p){
 }
 function buildReason(p,t){
  const r=state.props[t.i];if(t.type!=='property')return '交通枢纽不能建房';
- if(landingRules()){if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';const u=upgradeRecord().upgrade;if(!u||u.player!==p.id||u.tile!==t.i||u.round!==state.round||p.pos!==t.i||state.phase!=='end')return '再次停在这处自有房产后可升级';if(u.used)return '本次到访已处理，下次回来可再升级';if(p.cash<cost(t))return '现金不足，还差 '+money(cost(t)-p.cash);return '';}
+ if(landingRules()){if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';const u=upgradeRecord().upgrade;if(!u||u.player!==p.id||u.tile!==t.i||u.round!==state.round||p.pos!==t.i||state.phase!=='end')return '再次停在这处自有房产后可升级';if(u.used)return '本次到访已处理，下次回来可再升级';if(p.cash<paymentCost(p,t))return '现金不足，还差 '+money(paymentCost(p,t)-p.cash);return '';}
  if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';
  const group=tiles.filter(x=>x.type==='property'&&x.group===t.group),mine=group.filter(x=>state.props[x.i].owner===p.id);
  if(!fastRules()&&!setOwned(p,t))return '需集齐同色整组地产';
@@ -144,7 +144,7 @@ function buildReason(p,t){
  if(fastRules()&&r.level>=2&&!setOwned(p,t))return '升至 3–4 级需集齐同色整组地产';
  if(mine.some(x=>state.props[x.i].mortgage))return '请先赎回持有的同色地产';
  if((!fastRules()||r.level>=2)&&r.level>Math.min(...group.map(x=>state.props[x.i].level)))return '请先升级同组等级较低的房产';
- if(p.cash<cost(t))return '现金不足，还差 '+money(cost(t)-p.cash);return '';
+ if(p.cash<paymentCost(p,t))return '现金不足，还差 '+money(paymentCost(p,t)-p.cash);return '';
 }
 function fastChance(p){
  const cards=[
@@ -163,7 +163,7 @@ function economyRulesHTML(){if(landingRules()&&!fastRules())return '<p>本局保
 
 function landingRules(){return state.comfort?.v===1||fastRules()&&state.economy.development==='landing'}
 function grantLandingUpgrade(p,t){if(!landingRules())return;upgradeRecord().upgrade=null;const r=state.props[t.i];if(t.type==='property'&&r.owner===p.id&&!r.mortgage&&r.level<4){upgradeRecord().upgrade={player:p.id,tile:t.i,round:state.round,used:false};log(p.name+' 回到 '+t.name+'，获得本次到访的升级机会。')}}
-function projectedBaseRent(t){const r=state.props[t.i],next=Math.min(4,r.level+1),base=Math.round(t.price*(fastRules()?.18:.12)/10)*10;return Math.round(base*(fastRules()?[1,2.4,4.5,7,10]:[1,3,6,10,16])[next]*(state.market?.factor||1)*mapRentFactor(t)*maturityFactor()/10)*10}
+function projectedBaseRent(t){const r=state.props[t.i],next=Math.min(4,r.level+1),base=Math.round(t.price*(fastRules()?.18:.12)/10)*10;return Math.round(base*(fastRules()?[1,2.4,4.5,7,10]:[1,3,6,10,16])[next]*(state.market?.factor||1)*mapRentFactor(t)*maturityFactor()*(state.expansion?expansionRentFactor(t):1)/10)*10}
 
 function upgradeRecord(){return state.comfort||state.economy}
 function ensureComfort(s){
