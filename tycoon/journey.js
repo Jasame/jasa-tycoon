@@ -63,7 +63,7 @@ function aiSellingPrice(p,t){
 }
 function tradeable(i,sellerId){
  const t=tiles[i],r=state.props[i];return t&&r&&r.owner===sellerId&&!r.mortgage&&!state.players[sellerId]?.out&&
- !(t.type==='property'&&(fastRules()?(r.level>0||tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].owner===sellerId&&(state.props[x.i].level>=3||state.props[x.i].level===2&&tiles.filter(y=>y.type==='property'&&y.group===t.group&&y.i!==i&&state.props[y.i].owner===sellerId).length<2))):tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0)));
+ !(t.type==='property'&&(fastRules()?(r.level>0||!landingRules()&&tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].owner===sellerId&&(state.props[x.i].level>=3||state.props[x.i].level===2&&tiles.filter(y=>y.type==='property'&&y.group===t.group&&y.i!==i&&state.props[y.i].owner===sellerId).length<2))):tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0)));
 }
 function transferProperty(i,price,buyerId,sellerId){
  const buyer=state.players[buyerId],seller=state.players[sellerId];
@@ -108,7 +108,7 @@ const GUIDE=[
 ];
 function showGuide(step=0){
  if(busy){toast('请等待棋子移动完成。');return}clearTimeout(aiTimer);
- let [title,text,target]=GUIDE[step];if(fastRules()&&step===1)text='默认 20 回合，快速移动；经过起点领取 ¥1,400。无主地产可购买或公开拍卖，每次加价 ¥500。';if(fastRules()&&step===2)text='单块可开发 1 级，同色两块解锁 2 级，整组解锁 3–4 级。第 8 回合起每 4 回合有维护费；逆风玩家有一次创业援助。';
+ let [title,text,target]=GUIDE[step];if(fastRules()&&step===1)text='默认 20 回合，快速移动；经过起点领取 ¥1,400。无主地产可购买或公开拍卖，每次加价 ¥500。';if(landingRules()&&step===2)text='再次停在已拥有的房产，每次到访可付费升一级，最高四级；不需要集齐同色。路过或刚买下时不触发。';else if(fastRules()&&step===2)text='单块可开发 1 级，同色两块解锁 2 级，整组解锁 3–4 级。第 8 回合起每 4 回合有维护费；逆风玩家有一次创业援助。';
  modal(title,`<div class="guide-progress">${GUIDE.map((_,i)=>`<span class="${i<=step?'done':''}"></span>`).join('')}</div><p class="guide-count">新手引导 ${step+1} / ${GUIDE.length}</p><p>${text}</p><div class="guide-target">在游戏中寻找：<strong>${target}</strong></div><button class="primary" id="guideNext">${step===GUIDE.length-1?'开始探索 →':'下一步 →'}</button>${step?'<button class="wide" id="guideBack">上一步</button>':''}`);
  $('#guideNext').onclick=()=>{if(step<GUIDE.length-1)showGuide(step+1);else{try{localStorage.setItem('world-tycoon-guide','seen')}catch(e){}closeModal()}};
  if($('#guideBack'))$('#guideBack').onclick=()=>showGuide(step-1);
@@ -136,6 +136,7 @@ function economyTurn(p){
 }
 function buildReason(p,t){
  const r=state.props[t.i];if(t.type!=='property')return '交通枢纽不能建房';
+ if(landingRules()){if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';const u=state.economy.upgrade;if(!u||u.player!==p.id||u.tile!==t.i||u.round!==state.round||p.pos!==t.i||state.phase!=='end')return '再次停在这处自有房产后可升级';if(u.used)return '本次到访已处理，下次回来可再升级';if(p.cash<cost(t))return '现金不足，还差 '+money(cost(t)-p.cash);return '';}
  if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';
  const group=tiles.filter(x=>x.type==='property'&&x.group===t.group),mine=group.filter(x=>state.props[x.i].owner===p.id);
  if(!fastRules()&&!setOwned(p,t))return '需集齐同色整组地产';
@@ -158,4 +159,8 @@ function fastChance(p){
  ];
  const text=cards[Math.floor(Math.random()*cards.length)]();log(p.name+' 抽到机遇：'+text);toast(text);
 }
-function economyRulesHTML(){return '<p>创业竞速 · 每人 ¥10,000，默认 20 回合，经过起点 +¥1,400。所有玩家使用相同骰子与规则。</p><ol><li>单块地产可建 1 级；持有至少两块同色地产可建至 2 级；集齐整组可均衡建至 4 级。基础租金为地价 18%，1–4 级为基础租金的 2.4 / 4.5 / 7 / 10 倍。空地整组租金仍翻倍。</li><li>第 6 回合起租金成熟系数 ×1.15，第 12 回合起 ×1.3，与世界新闻及地图效果相乘。枢纽基础租金 ¥450／¥900。</li><li>第 8 回合起，每 4 回合在各自回合开始结算：每级建筑 ¥120，加地价总额超过 ¥12,000 部分的 2%，向上取整至百元。抵押仍计维护规模；请预留现金。</li><li>第 6 回合起，总资产低于存活领先者 65%、现金不足 ¥2,000，可自动获得一次 ¥2,000 逆风援助，每人全局一次。机遇中的小企业奖励与逆风订单也能带来追赶机会。</li><li>资产审计与突发检修按资产或建筑规模收费，扩张过快可能导致现金危机。普通市政税 ¥500；审计至少 ¥500，按超过 ¥10,000 的总资产 6% 加每级建筑 ¥120 计算。</li><li>拍卖每次加价 ¥500。出售建筑得造价一半，抵押得地价一半，赎回付 55%；现金不足先管理资产，无法偿债可破产。期限到按总资产排名。</li></ol>'}
+function economyRulesHTML(){if(landingRules())return '<p>到站建设 · 再次停在自己的房产，就有一次付费升级机会。</p><ol><li>无需集齐同色。必须停在已拥有、未抵押的房产，每次到访最多升一级；最高四级，建造费约为地价一半。刚买下需下次到访，单纯路过不会触发。</li><li>到站后选升级或暂不升级。机会本回合有效，未用完也不能留到下一轮；赎回抵押后仍需下次到访。</li><li>每人 ¥10,000，默认20回合。起点奖励 ¥1,400；基础租金为地价18%，四级倍率为2.4/4.5/7/10。第6、12回合成熟系数为1.15、1.3。</li><li>第8回合起，每4回合结算建筑维护费：每级¥120，加地价总额超¥12,000部分2%，向上百元。资产审计与突发检修随规模收费，预留现金才能持续经营。</li><li>第6回合起，资产低于存活领先者65%、现金不足¥2,000，可获一次¥2,000援助。创业补给、小企业奖励和逆风订单提供追赶机会。</li><li>拍卖每次加价¥500。建筑可独立出售得造价一半；本地产无建筑可抵押得地价50%，赎回付55%。抵押期间不收租。到期按总资产排名，无法偿债可宣布破产。</li><li>新规则仅新开对局启用，旧存档和已开局房间保持原规则。动画不影响操作与结算。</li></ol>';return '<p>创业竞速 · 每人 ¥10,000，默认 20 回合，经过起点 +¥1,400。所有玩家使用相同骰子与规则。</p><ol><li>单块地产可建 1 级；持有至少两块同色地产可建至 2 级；集齐整组可均衡建至 4 级。基础租金为地价 18%，1–4 级为基础租金的 2.4 / 4.5 / 7 / 10 倍。空地整组租金仍翻倍。</li><li>第 6 回合起租金成熟系数 ×1.15，第 12 回合起 ×1.3，与世界新闻及地图效果相乘。枢纽基础租金 ¥450／¥900。</li><li>第 8 回合起，每 4 回合在各自回合开始结算：每级建筑 ¥120，加地价总额超过 ¥12,000 部分的 2%，向上取整至百元。抵押仍计维护规模；请预留现金。</li><li>第 6 回合起，总资产低于存活领先者 65%、现金不足 ¥2,000，可自动获得一次 ¥2,000 逆风援助，每人全局一次。机遇中的小企业奖励与逆风订单也能带来追赶机会。</li><li>资产审计与突发检修按资产或建筑规模收费，扩张过快可能导致现金危机。普通市政税 ¥500；审计至少 ¥500，按超过 ¥10,000 的总资产 6% 加每级建筑 ¥120 计算。</li><li>拍卖每次加价 ¥500。出售建筑得造价一半，抵押得地价一半，赎回付 55%；现金不足先管理资产，无法偿债可破产。期限到按总资产排名。</li></ol>'}
+
+function landingRules(){return fastRules()&&state.economy.development==='landing'}
+function grantLandingUpgrade(p,t){if(!landingRules())return;state.economy.upgrade=null;const r=state.props[t.i];if(t.type==='property'&&r.owner===p.id&&!r.mortgage&&r.level<4){state.economy.upgrade={player:p.id,tile:t.i,round:state.round,used:false};log(p.name+' 回到 '+t.name+'，获得本次到访的升级机会。')}}
+function projectedBaseRent(t){const r=state.props[t.i],next=Math.min(4,r.level+1),base=Math.round(t.price*(fastRules()?.18:.12)/10)*10;return Math.round(base*(fastRules()?[1,2.4,4.5,7,10]:[1,3,6,10,16])[next]*(state.market?.factor||1)*mapRentFactor(t)*maturityFactor()/10)*10}
