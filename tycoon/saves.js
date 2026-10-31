@@ -4,6 +4,7 @@ function validInt(n,min,max){return Number.isSafeInteger(n)&&n>=min&&n<=max}
 function normalizeSave(input){
  if(!input||![1,2,3].includes(input.v)||!Array.isArray(input.players)||input.players.length<2||input.players.length>4||!Array.isArray(input.props)||input.props.length!==32)throw Error('不是有效的大富翁存档');
  const s=JSON.parse(JSON.stringify(input)),n=s.players.length;
+ if(s.economy!=null&&(s.economy.v!==5||!s.economy.relief||!s.economy.fees))throw Error('经济规则数据无效');
  const map=s.map||(s.v===1?'legacy':'world');if(map!=='legacy'&&!MAPS.some(m=>m.id===map))throw Error('存档地图不受支持');
  const players=s.players.map((p,i)=>{
   if(!p||p.id!==i||!validInt(p.cash,-1e9,1e9)||!validInt(p.pos,0,31)||!validInt(p.jail,0,2)||typeof p.out!=='boolean'||typeof p.ai!=='boolean'||typeof p.name!=='string')throw Error('玩家数据不完整');
@@ -13,17 +14,18 @@ function normalizeSave(input){
  const props=s.props.map((p,i)=>{if(!p||(p.owner!==null&&!validInt(p.owner,0,n-1))||!validInt(p.level,0,4)||typeof p.mortgage!=='boolean'||(p.owner===null&&(p.level||p.mortgage))||(p.owner!==null&&players[p.owner].out)||((typeof raw[i][1]!=='number')&&p.level))throw Error('地产数据不完整');return {owner:p.owner,level:p.level,mortgage:p.mortgage}});
  for(let group=0;group<8;group++){
   const members=raw.map((t,i)=>({t,i})).filter(x=>x.t[1]===group),built=members.some(x=>props[x.i].level>0);
-  if(built&&(members.some(x=>props[x.i].mortgage||props[x.i].owner!==props[members[0].i].owner)||(s.rulesVersion===3&&Math.max(...members.map(x=>props[x.i].level))-Math.min(...members.map(x=>props[x.i].level))>1)))throw Error('同色地产建筑数据不一致');
+  if(built&&!s.economy&&(members.some(x=>props[x.i].mortgage||props[x.i].owner!==props[members[0].i].owner)||(s.rulesVersion===3&&Math.max(...members.map(x=>props[x.i].level))-Math.min(...members.map(x=>props[x.i].level))>1)))throw Error('同色地产建筑数据不一致');
  }
  if(!Array.isArray(s.dice)||s.dice.length!==2||s.dice.some(d=>!validInt(d,1,6)))throw Error('骰子数据不完整');
  const factor=s.market?.factor??1;if(![.8,1,1.15,1.25,1.35].includes(factor))throw Error('市场数据不完整');
  const out={v:3,rulesVersion:s.rulesVersion===3?3:2,map,difficulty:['easy','normal','expert'].includes(s.difficulty)?s.difficulty:'normal',speed:s.speed===25?25:95,market:{name:typeof s.market?.name==='string'?s.market.name.slice(0,30):'平稳市场',factor},players,props,turn:s.turn,round:s.round,limit:s.limit,phase:s.phase,pending:null,dice:s.dice,over:s.over,mode:s.mode,logs:Array.isArray(s.logs)?s.logs.slice(0,50).filter(x=>x&&typeof x.text==='string'&&validInt(x.round,1,100000)).map(x=>({text:x.text.slice(0,300),round:x.round})):[],passports:{}};
+ if(s.economy){out.economy={v:5,relief:{},fees:{}};for(let i=0;i<n;i++){const relief=s.economy.relief[i],fee=s.economy.fees[i];if(relief!==undefined&&typeof relief!=='boolean'||fee!==undefined&&(!validInt(fee,8,s.round)||fee%4!==0))throw Error('经济进度无效');if(relief!==undefined)out.economy.relief[i]=relief;if(fee!==undefined)out.economy.fees[i]=fee;}for(let group=0;group<8;group++){const members=raw.map((t,i)=>({t,i})).filter(x=>x.t[1]===group);for(const x of members){const r=props[x.i],mine=members.filter(y=>props[y.i].owner===r.owner);if(r.level&&r.mortgage||r.level===2&&mine.length<2||r.level>=3&&(mine.length!==members.length||members.some(y=>props[y.i].mortgage)||Math.max(...members.map(y=>props[y.i].level))-Math.min(...members.map(y=>props[y.i].level))>1))throw Error('新规则建筑数据无效')}}}
  const purchasable=i=>validInt(i,0,31)&&(typeof raw[i][1]==='number'||raw[i][1]==='station');
  if(s.phase==='buy'){if(!purchasable(s.pending)||props[s.pending].owner!==null)throw Error('购买状态无效');out.pending=s.pending}
  if(s.phase==='auction'){
   const a=s.auction;
   if(!a||!purchasable(a.tile)||props[a.tile].owner!==null||!validInt(a.price,0,1e9)||!validInt(a.bidder,0,n-1)||players[a.bidder].out||!Array.isArray(a.passed)||a.passed.some(i=>!validInt(i,0,n-1))||new Set(a.passed).size!==a.passed.length||(a.leader!==null&&(!validInt(a.leader,0,n-1)||players[a.leader].out||a.passed.includes(a.leader)||players[a.leader].cash<a.price))||a.bidder===a.leader||a.passed.includes(a.bidder))throw Error('拍卖状态无效');
-  out.auction={tile:a.tile,price:a.price,leader:a.leader,bidder:a.bidder,passed:a.passed,step:100};
+  out.auction={tile:a.tile,price:a.price,leader:a.leader,bidder:a.bidder,passed:a.passed,step:s.economy?500:100};
  }
  if(s.phase==='trade'){
   const o=s.offer;if(!o||!purchasable(o.tile)||!validInt(o.buyer,0,n-1)||!validInt(o.seller,0,n-1)||o.buyer===o.seller||o.buyer!==s.turn||!players[o.buyer].ai||players[o.seller].ai||players[o.seller].out||props[o.tile].owner!==o.seller||props[o.tile].mortgage||!validInt(o.price,100,1e9)||players[o.buyer].cash<o.price)throw Error('交易邀约无效');
@@ -48,7 +50,7 @@ function restoreGame(input){
  if(busy)return false;
  let restored;try{restored=normalizeSave(input)}catch(e){toast('无法读取：'+e.message);return false}
  if(!archiveCurrent())return false;
- clearTimeout(aiTimer);state=restored;activateMap(state.map);selected=-1;$('#modal').hidden=true;render();scheduleAI();toast('已恢复旅程，切换前的对局已备份。');return true;
+ clearTimeout(aiTimer);state=restored;activateMap(state.map,fastRules());selected=-1;$('#modal').hidden=true;render();scheduleAI();toast('已恢复旅程，切换前的对局已备份。');return true;
 }
 function confirmRestore(entry){
  if(!entry?.game)return;
@@ -71,7 +73,7 @@ function showSaveCenter(){
 }
 function loadCurrentGame(){
  for(const key of [STORE,'city-tycoon-v2','city-tycoon-v1']){
-  try{const rawData=localStorage.getItem(key);if(rawData){const restored=normalizeSave(JSON.parse(rawData));activateMap(restored.map);return restored}}catch(e){}
+  try{const rawData=localStorage.getItem(key);if(rawData){const restored=normalizeSave(JSON.parse(rawData));activateMap(restored.map,restored.economy?.v===5);return restored}}catch(e){}
  }
  return makeGame();
 }

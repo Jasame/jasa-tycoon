@@ -29,12 +29,12 @@ function marketEvent(){
 }
 function startAuction(i){
  state.phase='auction';state.pending=null;
- state.auction={tile:i,price:0,leader:null,bidder:state.turn,passed:[],step:100};
- log(tiles[i].name+' 进入公开拍卖，起拍 ¥100，每次加价 ¥100。');render();scheduleAI();
+ state.auction={tile:i,price:0,leader:null,bidder:state.turn,passed:[],step:fastRules()?500:100};
+ log(tiles[i].name+' 进入公开拍卖，每次加价 '+money(state.auction.step)+'。');render();scheduleAI();
 }
 function renderAuctionAction(){
  const a=state.auction,p=state.players[a.bidder],t=tiles[a.tile];
- action('公开拍卖 · '+t.name,`轮到 ${p.name} 出价。当前 ${money(a.price)}${a.leader===null?' · 暂无出价':' · 领先者 '+state.players[a.leader].name}。退出后本次不能再竞价。`,p.ai?[]:[['出价 '+money(a.price+100),()=>auctionBid(true)],['退出竞价',()=>auctionBid(false),true]]);
+ action('公开拍卖 · '+t.name,`轮到 ${p.name} 出价。当前 ${money(a.price)}${a.leader===null?' · 暂无出价':' · 领先者 '+state.players[a.leader].name}。退出后本次不能再竞价。`,p.ai?[]:[['出价 '+money(a.price+a.step),()=>auctionBid(true)],['退出竞价',()=>auctionBid(false),true]]);
 }
 function auctionAI(){
  if(busy||state.over||state.phase!=='auction')return;
@@ -43,12 +43,12 @@ function auctionAI(){
  const completes=t.type==='property'&&others.every(x=>state.props[x.i].owner===p.id);
  const reserve=aiReserve(p);
  const ceiling=aiValue(p,t)*(state.difficulty==='easy'?.8:1);
- auctionBid(a.price+100<=Math.min(p.cash-reserve,ceiling));
+ auctionBid(a.price+a.step<=Math.min(p.cash-reserve,ceiling));
 }
 function auctionBid(bid){
  if(busy||state.over||state.phase!=='auction')return;clearTimeout(aiTimer);
  const a=state.auction,p=state.players[a.bidder];
- if(bid){if(p.cash<a.price+100){toast('现金不足，请退出竞价。');return}a.price+=100;a.leader=p.id;log(p.name+' 报价 '+money(a.price)+'。')}
+ if(bid){if(p.cash<a.price+a.step){toast('现金不足，请退出竞价。');return}a.price+=a.step;a.leader=p.id;log(p.name+' 报价 '+money(a.price)+'。')}
  else a.passed.push(p.id);
  const candidates=state.players.filter(x=>!x.out&&!a.passed.includes(x.id)&&x.id!==a.leader);
  if(!candidates.length){
@@ -61,8 +61,8 @@ function auctionBid(bid){
 }
 function showTrade(){
  if(!canManage()||current().cash<0)return;
- const available=tiles.filter(t=>{const r=state.props[t.i];return r.owner!==null&&r.owner!==current().id&&!r.mortgage&&!tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0)});
- modal('地产交易中心','<p>向其他合伙人提出现金收购。交易只接受未抵押、同组无建筑的地产。本地玩家需由卖方亲自确认。</p>'+(available.length?'<label>选择收购地产<select id="tradeTile">'+available.map(t=>`<option value="${t.i}">${t.name} · ${escapeHTML(state.players[state.props[t.i].owner].name)} · 原价 ${money(t.price)}</option>`).join('')+'</select></label><label>出价（至少 ¥100）<input id="tradePrice" type="number" min="100" step="100" value="2000"></label><button class="primary" id="offerTrade">提出收购</button>':'<p>目前没有符合条件的地产。先探索棋盘，等其他合伙人持有地产后再来。</p>'));
+ const available=tiles.filter(t=>{const r=state.props[t.i];return r.owner!==null&&r.owner!==current().id&&tradeable(t.i,r.owner)});
+ modal('地产交易中心','<p>向其他合伙人提出现金收购。交易接受未抵押且符合建筑资格的未开发地产。本地玩家需由卖方亲自确认。</p>'+(available.length?'<label>选择收购地产<select id="tradeTile">'+available.map(t=>`<option value="${t.i}">${t.name} · ${escapeHTML(state.players[state.props[t.i].owner].name)} · 原价 ${money(t.price)}</option>`).join('')+'</select></label><label>出价（至少 ¥100）<input id="tradePrice" type="number" min="100" step="100" value="2000"></label><button class="primary" id="offerTrade">提出收购</button>':'<p>目前没有符合条件的地产。先探索棋盘，等其他合伙人持有地产后再来。</p>'));
  if($('#offerTrade'))$('#offerTrade').onclick=()=>{
   const i=Number($('#tradeTile').value),amount=Number($('#tradePrice').value),buyer=current(),t=tiles[i],r=state.props[i],seller=state.players[r.owner];
   if(!canManage()||!Number.isSafeInteger(amount)||amount<100||amount>buyer.cash){toast('请输入有效报价，且不能超过现金。');return}

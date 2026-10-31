@@ -11,7 +11,7 @@ const MAP_RULES={
  legacy:{title:'经典经营',text:'原版规则，不附加地图经济效果。'}
 };
 function specialRules(){return state.rulesVersion>=3}
-function mapRule(){return MAP_RULES[state.map]||MAP_RULES.legacy}
+function mapRule(){const rule=MAP_RULES[state.map]||MAP_RULES.legacy;return fastRules()&&['africa','antarctica'].includes(state.map)?{...rule,text:rule.text.replace(/最高 ¥[58]00/,'最高 ¥300')}:fastRules()&&state.map==='oceania'?{...rule,text:'创业补给额外 +¥500，合计 ¥800／¥1,500；停在自有未抵押枢纽获得 ¥300。'}:rule}
 function mapBuildCost(t){const base=Math.ceil(t.price*.5/100)*100;return specialRules()&&state.map==='north-america'?Math.ceil(base*.8/100)*100:base}
 function activeStations(p){return owned(p.id).filter(t=>t.type==='station'&&!state.props[t.i].mortgage).length}
 function mapRentFactor(t){return specialRules()&&state.map==='asia'&&t.type==='station'?1.5:1}
@@ -19,8 +19,8 @@ function onPassStart(p){if(specialRules()&&state.map==='europe'){const bonus=act
 function onTurnStart(p){
  if(!specialRules()||p.out)return;
  let bonus=0;
- if(state.map==='africa')bonus=Math.min(500,owned(p.id).filter(t=>t.type==='property'&&!state.props[t.i].level&&!state.props[t.i].mortgage).length*100);
- if(state.map==='antarctica')bonus=Math.min(800,owned(p.id).reduce((s,t)=>s+state.props[t.i].level*100,0));
+ if(state.map==='africa')bonus=Math.min(fastRules()?300:500,owned(p.id).filter(t=>t.type==='property'&&!state.props[t.i].level&&!state.props[t.i].mortgage).length*100);
+ if(state.map==='antarctica')bonus=Math.min(fastRules()?300:800,owned(p.id).reduce((s,t)=>s+state.props[t.i].level*100,0));
  if(bonus){p.cash+=bonus;log(p.name+' 获得'+(state.map==='africa'?'生态补贴 ':'科研拨款 ')+money(bonus)+'。')}
 }
 function onMapLanding(p,t){
@@ -37,6 +37,7 @@ function onMapLanding(p,t){
  }
 }
 function journeyStatus(){
+ if(fastRules())return mapRule().text+' 创业竞速：成熟系数 ×'+maturityFactor()+'，第 '+nextUpkeepRound()+' 回合维护费预估 '+money(upkeepFee(current()))+'。';
  if(!specialRules())return '兼容模式 · 保留本局原有经济规则；新局启用地图特色。';
  const p=current();
  if(state.map==='world')return '环球护照 '+(state.passports?.[p.id]?.groups.length||0)+'/8 · '+mapRule().text;
@@ -62,7 +63,7 @@ function aiSellingPrice(p,t){
 }
 function tradeable(i,sellerId){
  const t=tiles[i],r=state.props[i];return t&&r&&r.owner===sellerId&&!r.mortgage&&!state.players[sellerId]?.out&&
- !(t.type==='property'&&tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0));
+ !(t.type==='property'&&(fastRules()?(r.level>0||tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].owner===sellerId&&(state.props[x.i].level>=3||state.props[x.i].level===2&&tiles.filter(y=>y.type==='property'&&y.group===t.group&&y.i!==i&&state.props[y.i].owner===sellerId).length<2))):tiles.some(x=>x.type==='property'&&x.group===t.group&&state.props[x.i].level>0)));
 }
 function transferProperty(i,price,buyerId,sellerId){
  const buyer=state.players[buyerId],seller=state.players[sellerId];
@@ -107,8 +108,54 @@ const GUIDE=[
 ];
 function showGuide(step=0){
  if(busy){toast('请等待棋子移动完成。');return}clearTimeout(aiTimer);
- const [title,text,target]=GUIDE[step];
+ let [title,text,target]=GUIDE[step];if(fastRules()&&step===1)text='默认 20 回合，快速移动；经过起点领取 ¥1,400。无主地产可购买或公开拍卖，每次加价 ¥500。';if(fastRules()&&step===2)text='单块可开发 1 级，同色两块解锁 2 级，整组解锁 3–4 级。第 8 回合起每 4 回合有维护费；逆风玩家有一次创业援助。';
  modal(title,`<div class="guide-progress">${GUIDE.map((_,i)=>`<span class="${i<=step?'done':''}"></span>`).join('')}</div><p class="guide-count">新手引导 ${step+1} / ${GUIDE.length}</p><p>${text}</p><div class="guide-target">在游戏中寻找：<strong>${target}</strong></div><button class="primary" id="guideNext">${step===GUIDE.length-1?'开始探索 →':'下一步 →'}</button>${step?'<button class="wide" id="guideBack">上一步</button>':''}`);
  $('#guideNext').onclick=()=>{if(step<GUIDE.length-1)showGuide(step+1);else{try{localStorage.setItem('world-tycoon-guide','seen')}catch(e){}closeModal()}};
  if($('#guideBack'))$('#guideBack').onclick=()=>showGuide(step-1);
 }
+
+// v5 rules are opt-in per game; existing saves and rooms retain their economy.
+function fastRules(){return state?.economy?.v===5}
+function startGrant(){return fastRules()?1400:2000}
+function maturityFactor(){return !fastRules()||state.round<6?1:state.round<12?1.15:1.3}
+function nextUpkeepRound(p=current()){return state.round>=8&&state.round%4===0&&state.economy?.fees[p.id]!==state.round?state.round:Math.max(8,Math.floor(state.round/4+1)*4)}
+function upkeepFee(p){
+ const portfolio=owned(p.id).reduce((n,t)=>n+t.price,0),levels=owned(p.id).reduce((n,t)=>n+state.props[t.i].level,0);
+ return Math.ceil((levels*120+Math.max(0,portfolio-12000)*.02)/100)*100;
+}
+function auditFee(p){return Math.max(500,Math.ceil((Math.max(0,worth(p)-10000)*.06+owned(p.id).reduce((n,t)=>n+state.props[t.i].level*120,0))/100)*100)}
+function isUnderdog(p){const leader=Math.max(...state.players.filter(x=>!x.out).map(worth));return state.round>=6&&worth(p)<leader*.65}
+function tryRelief(p){
+ if(!fastRules()||p.out||state.economy.relief[p.id]||p.cash>=2000||!isUnderdog(p))return;
+ state.economy.relief[p.id]=true;p.cash+=2000;log(p.name+' 获得一次性逆风创业援助 ¥2,000。每人全局限一次，不保证免于破产。');
+}
+function economyTurn(p){
+ if(!fastRules()||p.out)return;
+ if(state.round>=8&&state.round%4===0&&state.economy.fees[p.id]!==state.round){state.economy.fees[p.id]=state.round;const fee=upkeepFee(p);p.cash-=fee;if(fee)log(p.name+' 支付资产维护费 '+money(fee)+'（建筑每级 ¥120 + 超过 ¥12,000 的地价总额 2%，向上取整至百元）。')}
+ tryRelief(p);
+}
+function buildReason(p,t){
+ const r=state.props[t.i];if(t.type!=='property')return '交通枢纽不能建房';
+ if(r.owner!==p.id)return '仅业主可升级';if(r.mortgage)return '请先赎回本地产';if(r.level>=4)return '已达最高 4 级';
+ const group=tiles.filter(x=>x.type==='property'&&x.group===t.group),mine=group.filter(x=>state.props[x.i].owner===p.id);
+ if(!fastRules()&&!setOwned(p,t))return '需集齐同色整组地产';
+ if(fastRules()&&r.level===1&&mine.length<2)return '升至 2 级需持有至少两块同色地产';
+ if(fastRules()&&r.level>=2&&!setOwned(p,t))return '升至 3–4 级需集齐同色整组地产';
+ if(mine.some(x=>state.props[x.i].mortgage))return '请先赎回持有的同色地产';
+ if((!fastRules()||r.level>=2)&&r.level>Math.min(...group.map(x=>state.props[x.i].level)))return '请先升级同组等级较低的房产';
+ if(p.cash<cost(t))return '现金不足，还差 '+money(cost(t)-p.cash);return '';
+}
+function fastChance(p){
+ const cards=[
+ ()=>{p.cash+=1400;return '创业订单到账，获得 ¥1,400。'},
+ ()=>{const amount=isUnderdog(p)?2400:1000;p.cash+=amount;return '城市扶持订单，获得 '+money(amount)+'（逆风玩家订单额外奖励）。'},
+ ()=>{const fee=600+owned(p.id).reduce((n,t)=>n+state.props[t.i].level*250,0);p.cash-=fee;return '突发建筑检修：基础 ¥600 + 每级建筑 ¥250，共支出 '+money(fee)+'。'},
+ ()=>{const fee=auditFee(p);p.cash-=fee;return '资产风险审查，支付 '+money(fee)+'；资产与建筑越多，风险支出越高。'},
+ ()=>{p.pos=0;p.cash+=startGrant();onPassStart(p);return '搭上创业快线，领取 '+money(startGrant())+' 起点奖励。'},
+ ()=>{p.cash+=800;return '街区快闪活动，获得 ¥800。'},
+ ()=>{p.pos=8;p.jail=1;return '交通延误，进入探监区，最多停留一轮。'},
+ ()=>{const amount=owned(p.id).length<4?1800:600;p.cash+=amount;return '小企业创新奖，获得 '+money(amount)+'；持有不足四处地产奖励更高。'}
+ ];
+ const text=cards[Math.floor(Math.random()*cards.length)]();log(p.name+' 抽到机遇：'+text);toast(text);
+}
+function economyRulesHTML(){return '<p>创业竞速 · 每人 ¥10,000，默认 20 回合，经过起点 +¥1,400。所有玩家使用相同骰子与规则。</p><ol><li>单块地产可建 1 级；持有至少两块同色地产可建至 2 级；集齐整组可均衡建至 4 级。基础租金为地价 18%，1–4 级为基础租金的 2.4 / 4.5 / 7 / 10 倍。空地整组租金仍翻倍。</li><li>第 6 回合起租金成熟系数 ×1.15，第 12 回合起 ×1.3，与世界新闻及地图效果相乘。枢纽基础租金 ¥450／¥900。</li><li>第 8 回合起，每 4 回合在各自回合开始结算：每级建筑 ¥120，加地价总额超过 ¥12,000 部分的 2%，向上取整至百元。抵押仍计维护规模；请预留现金。</li><li>第 6 回合起，总资产低于存活领先者 65%、现金不足 ¥2,000，可自动获得一次 ¥2,000 逆风援助，每人全局一次。机遇中的小企业奖励与逆风订单也能带来追赶机会。</li><li>资产审计与突发检修按资产或建筑规模收费，扩张过快可能导致现金危机。普通市政税 ¥500；审计至少 ¥500，按超过 ¥10,000 的总资产 6% 加每级建筑 ¥120 计算。</li><li>拍卖每次加价 ¥500。出售建筑得造价一半，抵押得地价一半，赎回付 55%；现金不足先管理资产，无法偿债可破产。期限到按总资产排名。</li></ol>'}

@@ -12,9 +12,29 @@ const MAPS = [
  {id:'antarctica',name:'南极科考',en:'ANTARCTICA',icon:'❄',color:'#537e95',desc:'架空科考经营：建设观测网络，探索冰雪大陆。',names:'冰湾营地,企鹅观测点,极光营地,蓝冰营地,雪原补给点,海冰观测点,冰架营地,南风观测点,极昼营地,冰穹营地,陨石观测点,极夜营地,深冰实验室,雪岭营地,冰川观测点,海洋实验室,风暴观测点,冰芯档案馆,天文观测点,极点科考中心',stations:['破冰船码头','极地航空站'],groups:['冰湾网络','雪原网络','海冰网络','极昼网络','冰穹网络','雪岭网络','海洋网络','极点网络']}
 ];
 let activeMap=MAPS[0];
-function activateMap(id){
+const MAP_DESIGNS={
+ world:{tiers:[0,4,1,6,2,5,3,7],tag:'环球竞速 · 低价门户与高价商圈交错'},
+ asia:{tiers:[1,3,0,6,2,4,5,7],tag:'贸易走廊 · 枢纽租金与中段建设'},
+ europe:{tiers:[0,2,5,3,1,4,7,6],tag:'古城复兴 · 廉价腹地与铁路回流'},
+ africa:{tiers:[2,0,3,1,5,4,6,7],tag:'绿洲创业 · 低价土地与生态现金流'},
+ 'north-america':{tiers:[3,6,0,2,1,4,5,7],tag:'建设竞赛 · 昂贵海岸与低价内陆'},
+ 'south-america':{tiers:[1,4,2,0,5,3,7,6],tag:'安第斯冒险 · 机遇与两端商圈'},
+ oceania:{tiers:[0,3,1,2,6,5,4,7],tag:'海岛经营 · 度假现金与高价都会'},
+ antarctica:{tiers:[0,2,1,4,3,6,5,7],tag:'科考网络 · 建设拨款与维护风险'},
+ legacy:{tiers:[0,4,1,6,2,5,3,7],tag:'城市焕新 · 小街起步与金融风浪'}
+};
+function activateMap(id,modern=false){
  activeMap=MAPS.find(m=>m.id===id)||MAPS[0];
- if(id==='legacy'){activeMap={id:'legacy',name:'城市经典',en:'CITY',icon:'▥',color:'#173f36',desc:'原版中国城市地图',groups:['江南街巷','武林湖滨','钱江滨江','科技西溪','浦江风景','上海街区','成都街区','金融都会']};tiles=raw.map((r,i)=>({i,name:r[0],type:typeof r[1]==='number'?'property':r[1],group:typeof r[1]==='number'?r[1]:null,price:typeof r[2]==='number'?r[2]:0,symbol:typeof r[2]==='string'?r[2]:null}));return;}
+ if(id==='legacy'){activeMap={id:'legacy',name:'城市经典',en:'CITY',icon:'▥',color:'#173f36',desc:'原版中国城市地图',groups:['江南街巷','武林湖滨','钱江滨江','科技西溪','浦江风景','上海街区','成都街区','金融都会']};tiles=raw.map((r,i)=>({i,name:r[0],type:typeof r[1]==='number'?'property':r[1],group:typeof r[1]==='number'?r[1]:null,price:typeof r[2]==='number'?r[2]:0,symbol:typeof r[2]==='string'?r[2]:null}));if(modern)redesignMap();return;}
  let n=0,s=0;const names=activeMap.names.split(',');
  tiles=raw.map((r,i)=>({i,name:typeof r[1]==='number'?names[n++]:r[1]==='station'?activeMap.stations[s++]:r[0],type:typeof r[1]==='number'?'property':r[1],group:typeof r[1]==='number'?r[1]:null,price:typeof r[2]==='number'?r[2]:0,symbol:typeof r[2]==='string'?r[2]:null}));
+ if(modern)redesignMap();
 }
+function redesignMap(){
+ const routes={world:['曼谷,首尔,东京,新加坡,香港,开罗,开普敦,伊斯坦布尔,罗马,巴黎,伦敦,阿姆斯特丹,纽约,多伦多,墨西哥城,里约热内卢,布宜诺斯艾利斯,悉尼,墨尔本,奥克兰',['东亚门户','亚洲都会','非洲海岸','欧洲古城','跨洋商圈','北美门户','南美风情','大洋洲都会']],asia:[MAPS[1].names,['东南亚商圈','海岛都会','南亚门户','南亚至海湾','海湾腹地','东亚都会','韩日航线','国际都会']],europe:[MAPS[2].names,['伊比利亚门户','西班牙南岸','地中海古城','意大利至中欧','中东欧街区','德国都会','法国双城','北境航线']],africa:[MAPS[3].names,['摩洛哥街区','北非海岸','尼罗河畔','西非商圈','中非街区','东非高原','印度洋岸','南非都会']],'north-america':[MAPS[4].names,['西北海岸','加州门户','南加州至墨西哥','加勒比航线','中美洲商圈','加拿大都会','美国北部','美国东岸']],'south-america':[MAPS[5].names,['太平洋门户','安第斯高地','哥伦比亚双城','北岸至南锥','南锥腹地','拉普拉塔河','巴西海岸','巴西都会']],oceania:[MAPS[6].names,['热带北岸','东澳海岸','西澳南澳','塔岛至首都','澳洲都会','新西兰北岛','新西兰南岛','太平洋群岛']],antarctica:[MAPS[7].names,['冰湾网络','蓝冰补给','海冰网络','极昼网络','深冰网络','雪岭网络','海洋网络','极点网络']]};
+ const route=routes[activeMap.id];if(route){activeMap={...activeMap,names:route[0],groups:route[1]};let city=0;tiles=tiles.map(t=>t.type==='property'?{...t,name:route[0].split(',')[city++]}:t)}
+ const design=MAP_DESIGNS[activeMap.id],bases=[1000,1400,1800,2200,2800,3400,4000,4600],seen={};
+ activeMap={...activeMap,desc:design.tag};
+ tiles=tiles.map(t=>{if(t.type==='property'){const offset=seen[t.group]||0;seen[t.group]=offset+1;return {...t,price:bases[design.tiers[t.group]]+offset*200}}if(t.type==='station')return {...t,price:2000};if(t.type==='park')return {...t,name:'创业补给',symbol:'✚'};if(t.type==='chance')return {...t,name:'创业机遇'};if(t.type==='tax')return {...t,name:t.i===26?'资产审计':'市政税',price:500};return t});
+}
+
