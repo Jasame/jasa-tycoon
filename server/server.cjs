@@ -22,7 +22,7 @@ class Rooms{
  avatar(value){return ['fox','cat','panda','rabbit','bear','frog','owl','penguin','dog','koala','tiger','raccoon'].includes(value)?value:'fox'}
  career(value){return ['architect','traveler','banker','merchant'].includes(value)?value:'architect'}
  name(value){const name=String(value||'').trim().replace(/[\u0000-\u001f]/g,'').slice(0,12);if(!name)throw fail('请输入玩家昵称');return name}
- options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {expansion:input?.expansion===true,map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
+ options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {experience:input?.experience===true,pace:input?.pace==='quick'?'quick':'standard',personality:['builder','traveler','steady'].includes(input?.personality)?input.personality:'mixed',difficulty:['easy','normal','expert'].includes(input?.difficulty)?input.difficulty:'normal',expansion:input?.expansion===true,map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,12,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
  async handle(method,route,body,token,ip){return this.transaction(async()=>{
   this.limit(ip,route==='create'?'create':route==='join'?'join':route==='state'?'poll':'action');
   if(route==='create'){
@@ -43,7 +43,8 @@ class Rooms{
   if(body.revision!==room.revision)throw fail('对局已更新，请查看最新状态后重试',409);
   const previous=JSON.stringify(room);
   try{
-   if(route==='cancelStart'){if(room.status!=='countdown'||room.host!==m.id)throw fail('只有房主可取消准备倒计时',403);room.status='lobby';room.game=null;room.deadline=0;this.engines.delete(code);
+   if(route==='rematch'){if(room.status!=='finished'||room.host!==m.id)throw fail('只有房主可在结算后发起再战',403);room.status='lobby';room.game=null;room.deadline=0;room.social=[];room.members.forEach(x=>x.ready=!!x.bot||x.id===room.host);this.engines.delete(code);
+   }else if(route==='cancelStart'){if(room.status!=='countdown'||room.host!==m.id)throw fail('只有房主可取消准备倒计时',403);room.status='lobby';room.game=null;room.deadline=0;this.engines.delete(code);
    }else if(route==='addBot'){
     if(room.status!=='lobby'||room.host!==m.id)throw fail('只有房主可在等待房间管理人机',403);if(room.members.length>=room.options.capacity)throw fail('房间已满');const i=[1,2,3,4].find(i=>!room.members.some(x=>x.name==='AI '+i));room.members.push({id:crypto.randomUUID(),name:'AI '+i,avatar:['panda','cat','rabbit','bear'][i-1],career:['architect','traveler','banker','merchant'][i-1],bot:true,ready:true,seen:now(),actions:[]});
    }else if(route==='removeBot'){
@@ -74,7 +75,7 @@ class Rooms{
  async tick(){return this.transaction(async()=>{
   let changed=false;const previousRooms=JSON.stringify([...this.rooms.values()]);
   for(const r of this.rooms.values()){if(r.status==='countdown'&&r.deadline<=now()){if(r.members.some(m=>!m.bot&&now()-m.seen>20000)){r.status='lobby';r.game=null;r.deadline=0;this.engines.delete(r.code)}else{r.status='playing';r.deadline=now()+this.turnMs}r.revision++;r.updated=now();changed=true;continue}if(r.status==='playing'&&r.deadline&&(r.deadline<=now()||this.engine(r).botActor()!==null)){
-   const previous=JSON.stringify(r);try{const engine=this.engine(r);const isBot=engine.botActor()!==null;if(isBot)await engine.botStep();else await engine.timeout();r.game=engine.snapshot();if(!isBot)r.game.logs.unshift({text:'等待超时，服务器已执行默认操作。',round:r.game.round});r.game.logs=r.game.logs.slice(0,50);engine.restore(r.game);r.revision++;r.updated=now();r.deadline=r.game.over?0:now()+this.turnMs;if(r.game.over)r.status='finished';changed=true}catch(e){this.rooms.set(r.code,JSON.parse(previous));this.engines.delete(r.code);throw e}
+   const previous=JSON.stringify(r);try{const engine=this.engine(r);const isBot=engine.botActor()!==null;if(isBot){for(let step=0;step<(r.game.experience?(r.game.experience.pace==='quick'?6:3):1)&&engine.botActor()!==null;step++)await engine.botStep()}else await engine.timeout();r.game=engine.snapshot();if(!isBot)r.game.logs.unshift({text:'等待超时，服务器已执行默认操作。',round:r.game.round});r.game.logs=r.game.logs.slice(0,50);engine.restore(r.game);r.revision++;r.updated=now();r.deadline=r.game.over?0:now()+this.turnMs;if(r.game.over)r.status='finished';changed=true}catch(e){this.rooms.set(r.code,JSON.parse(previous));this.engines.delete(r.code);throw e}
   }
   }
   if(changed)try{this.persist()}catch(e){this.rooms=new Map(JSON.parse(previousRooms).map(r=>[r.code,r]));this.engines.clear();throw e}
@@ -85,8 +86,8 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  function send(status,data){res.writeHead(status,headers);res.end(JSON.stringify(data))}
  try{
   const url=new URL(req.url,'http://localhost');
-  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'7.0.0'});return}
-  const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
+  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'8.0.0'});return}
+  const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart|rematch)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
   if(origin&&new URL(origin).host!==host)throw fail('不接受跨站请求',403);

@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const publicPath=fs.existsSync(path.join(__dirname,'core'))?path.join(__dirname,'core'):path.join(__dirname,'../tycoon');
-const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','saves.js'];
+const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','saves.js'];
 const game=fs.readFileSync(path.join(publicPath,'game.js'),'utf8').split("$('#roll').onclick=")[0];
 const bundle=files.map(f=>fs.readFileSync(path.join(publicPath,f),'utf8')).join('\n')+'\n'+game+`
 render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};
