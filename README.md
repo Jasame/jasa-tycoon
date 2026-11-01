@@ -2,12 +2,17 @@
 
 一款支持 **2–4 人远程联机、AI 对战与同屏轮流游玩**的浏览器地产经营棋盘游戏。掷骰探索城市、购买地产、到站升级，在扩张收益与现金风险之间做选择。
 
-**[在线游玩](https://jasa.hk/tycoon/)** · **[V12.0.1 下载与版本说明](https://github.com/Jasame/jasa-tycoon/releases/tag/v12.0.1)** · [English](README.en.md) · [更新记录](CHANGELOG.md) · [部署指南](DEPLOYMENT.md)
+**[在线游玩](https://jasa.hk/tycoon/)** · **[V12.0.2 下载与版本说明](https://github.com/Jasame/jasa-tycoon/releases/tag/v12.0.2)** · [English](README.en.md) · [更新记录](CHANGELOG.md) · [部署指南](DEPLOYMENT.md)
 
-当前游戏版本：**V12.0.1 / backend 12.0.0** · 简体中文 / 繁體中文 / English · MIT 开源
+当前游戏版本：**V12.0.2 / backend 12.0.0** · 简体中文 / 繁體中文 / English · MIT 开源
 
 
 V12.0.1 已修复暗色模式下数据卡、存档、联机表单和提示的对比度，见 [修复说明](V12.0.1-RELEASE-NOTES.md)。
+
+
+## V12.0.2 联机房间地图
+
+房主可在等待房间更换九张地图，地图列表显示各自启动资金。更换后其他真人需重新准备；倒计时与对局中不能更换。结算后由房主发起再战，回到等待房间后可选新地图。服务端校验房主权限、地图范围、版本与请求去重。
 
 ## V12 界面重设计
 

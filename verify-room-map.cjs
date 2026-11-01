@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {Rooms}=require('./server/server.cjs');
+module.exports=async function(){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'room-map-'));let rooms=new Rooms(dir),seq=0,checks=0;const call=(route,body,token)=>rooms.handle('POST',route,body,token,'test-map');const action=(route,r,t,data={})=>call(route,{code:r.code,revision:r.revision,actionId:'map-test-'+(++seq),...data},t);const ok=(v,m)=>{assert.ok(v,m);checks++};const deny=async(fn,m)=>{await assert.rejects(fn,undefined,m);checks++};
+ try{let h=await call('create',{name:'Host',map:'world',capacity:4,experience:true});const ht=h.token,code=h.code;let g=await call('join',{code,name:'Guest'}),gt=g.token;g=await action('ready',g,gt,{ready:true});h=await call('state',{code},ht);
+ await deny(()=>action('setMap',h,gt,{map:'europe'}),'Guest cannot change the map');await deny(()=>action('setMap',h,ht,{map:'bogus'}),'Invalid map rejected');
+ let before=h.revision;h=await action('setMap',h,ht,{map:'europe'});ok(h.options.map==='europe'&&h.revision===before+1,'Host changes map and revision');ok(!h.members[1].ready,'Map change resets guest readiness');g=await call('state',{code},gt);ok(g.options.map==='europe'&&!g.members[1].ready,'Guest sees change and readiness reset');
+ g=await action('ready',g,gt,{ready:true});h=await call('state',{code},ht);h=await action('setMap',h,ht,{map:'europe'});ok(h.members[1].ready,'Same map does not reset readiness');await deny(()=>call('setMap',{code,revision:before,actionId:'stale-map-request',map:'asia'},ht),'Stale request rejected');
+ rooms=new Rooms(dir);h=await call('state',{code},ht);g=await call('state',{code},gt);ok(h.options.map==='europe','Map survives server restart');g=await action('ready',g,gt,{ready:true});h=await call('state',{code},ht);h=await action('start',h,ht,{countdown:true});ok(h.game.map==='europe'&&h.game.players.every(p=>p.cash===11000),'New game starts on selected map with map-specific cash');await deny(()=>action('setMap',h,ht,{map:'asia'}),'Countdown rejects map change');
+ h=await action('cancelStart',h,ht);h=await action('setMap',h,ht,{map:'asia'});ok(h.options.map==='asia'&&!h.members[1].ready,'Host can change map after cancelling countdown');g=await call('state',{code},gt);g=await action('ready',g,gt,{ready:true});h=await call('state',{code},ht);h=await action('start',h,ht);await deny(()=>action('setMap',h,ht,{map:'world'}),'Active game rejects map change');
+ const internal=rooms.rooms.get(code);internal.status='finished';h=await call('state',{code},ht);h=await action('rematch',h,ht);h=await action('setMap',h,ht,{map:'africa'});ok(h.status==='lobby'&&h.options.map==='africa','Rematch lobby permits another map');
+ console.log(checks+' room-map checks passed');return checks;
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+};
+if(require.main===module)module.exports().catch(e=>{console.error(e);process.exitCode=1});
