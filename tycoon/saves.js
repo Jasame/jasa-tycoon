@@ -35,6 +35,7 @@ function normalizeSave(input){
  for(const p of players){const pass=s.passports?.[p.id];if(pass&&Array.isArray(pass.groups)&&pass.groups.every(g=>validInt(g,0,7)))out.passports[p.id]={groups:[...new Set(pass.groups)],rewarded:!!pass.rewarded}}
  if(s.experience)out.experience=normalizeExperience(s.experience,n);
  if(s.expansion)out.expansion=normalizeExpansion(s.expansion,n,s.round);
+ if(s.voyage)out.voyage=normalizeVoyage(s.voyage,n,s.round);
  if(s.refinement)out.refinement=normalizeRefinement(s.refinement,n,s.round);
  if(s.community)out.community=normalizeCommunity(s.community,n,s.round);
  players.forEach((p,i)=>{if(s.players[i].cosmetics)p.cosmetics=safeCosmetics(s.players[i].cosmetics)});

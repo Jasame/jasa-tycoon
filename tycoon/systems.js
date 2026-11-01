@@ -43,6 +43,7 @@ function auctionAI(){
  const completes=t.type==='property'&&others.every(x=>state.props[x.i].owner===p.id);
  const reserve=aiReserve(p);
  const ceiling=aiValue(p,t)*(state.difficulty==='easy'?.8:1);
+ if(state.voyage)noteAIDecision(p,a.price+a.step<=Math.min(p.cash-reserve,ceiling)?'bid':'pass',t,a.price+a.step>p.cash-reserve?'reserve':'value',reserve,Math.round(ceiling));
  auctionBid(a.price+a.step<=Math.min(p.cash-reserve,ceiling));
 }
 function auctionBid(bid){

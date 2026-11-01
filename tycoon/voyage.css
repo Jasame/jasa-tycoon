@@ -1,0 +1,43 @@
+.voyage-status{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid var(--line,#cbd4c5);border-radius:12px;margin-top:12px;font-size:13px}.voyage-status p{margin:5px 0;font-size:12px}.voyage-status button{min-height:44px;padding:10px 14px}.voyage-room-tools{border-top:1px solid var(--line,#cbd4c5);margin-top:15px;padding-top:12px}.voyage-room-tools p{font-size:12px;line-height:1.7}.decision-row{padding:12px 0;border-top:1px solid var(--line,#cbd4c5)}.decision-row p{margin:5px 0}.decision-row small{display:block;opacity:.75;line-height:1.7}.sample-filters{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sample-filters label{min-width:0}.sample-filters select{width:100%}#recoverySecret{font-family:ui-monospace,monospace;font-size:16px;letter-spacing:1px}#generateRecovery{margin-top:12px}.spectator-panel>div{flex-basis:100%}
+/* iPadOS reports a Mac platform with multiple touch points; behavior also follows viewport. */
+html[data-tablet]:not([data-tablet="off"]) .modal{max-width:min(760px,calc(100vw - 40px));max-height:calc(var(--tablet-height,100dvh) - 32px - env(safe-area-inset-bottom));scroll-padding-bottom:70px}
+html[data-tablet]:not([data-tablet="off"]) .modal input,html[data-tablet]:not([data-tablet="off"]) .modal select,html[data-tablet]:not([data-tablet="off"]) .modal textarea{font-size:16px;min-height:46px}
+html[data-tablet]:not([data-tablet="off"]) button{min-height:44px;touch-action:manipulation}
+html[data-tablet]:not([data-tablet="off"]) .board-viewport{touch-action:pan-x pan-y pinch-zoom;overscroll-behavior:contain}
+html[data-tablet]:not([data-tablet="off"]) .tile{touch-action:manipulation}
+html[data-tablet="landscape"] .compact-ui,html[data-tablet="portrait"] .compact-ui{--tablet-pad:20px}
+html[data-tablet="landscape"] main{max-width:1500px;padding:16px max(20px,env(safe-area-inset-left)) 0;padding-right:max(20px,env(safe-area-inset-right))}
+html[data-tablet="landscape"] .compact-ui .layout,html[data-tablet="landscape"] .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,310px);gap:18px;align-items:start}
+html[data-tablet="landscape"] aside{display:flex;flex-direction:column;gap:12px}
+html[data-tablet="landscape"] .board-shell{width:100%;max-width:min(100%,calc(100dvh - 190px));margin-inline:auto;grid-column:auto;grid-row:auto}
+html[data-tablet="landscape"] .action-panel,html[data-tablet="landscape"] .players-panel,html[data-tablet="landscape"] .feed-details{grid-column:auto;grid-row:auto;width:100%}
+html[data-tablet="landscape"] .board .tile-name{font-size:clamp(10px,1.05vw,13px);line-height:1.2}
+html[data-tablet="landscape"] .board .price{font-size:10px}
+html[data-tablet="landscape"] .atlas-bar{padding:14px 18px;margin-bottom:14px}
+html[data-tablet="landscape"] header{min-height:66px;padding:12px 22px}
+html[data-tablet="landscape"] .panel{padding:16px!important}
+html[data-tablet="landscape"] .board-center .roll,html[data-tablet="landscape"] .board-center .end{min-width:130px;font-size:14px}
+html[data-tablet="portrait"] .layout{display:grid!important;grid-template-columns:minmax(0,1fr);gap:16px}
+html[data-tablet="portrait"] .board-shell{width:100%;max-width:850px;margin:auto}
+html[data-tablet="portrait"] aside{display:grid!important;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+html[data-tablet="portrait"] .action-panel{grid-column:1;grid-row:1}
+html[data-tablet="portrait"] .players-panel{grid-column:2;grid-row:1}
+html[data-tablet="portrait"] .feed-details{grid-column:1/-1;grid-row:2}
+html[data-tablet="portrait"] .board .tile-name{font-size:clamp(11px,1.5vw,14px)}
+html[data-tablet="portrait"] .center-title{font-size:44px}
+html[data-tablet="portrait"] .atlas-bar{padding:18px;gap:12px}
+html[data-tablet="portrait"] .atlas-actions{flex:0 0 auto}
+html[data-tablet="portrait"] .panel{padding:18px!important}
+html[data-tablet="split"] main{padding:12px max(10px,env(safe-area-inset-left)) 0;padding-right:max(10px,env(safe-area-inset-right))}
+html[data-tablet="split"] .layout{display:flex!important;flex-direction:column;gap:12px}
+html[data-tablet="split"] aside{display:contents!important}
+html[data-tablet="split"] .board-shell{width:100%;max-width:none;order:1}
+html[data-tablet="split"] .action-panel{order:2;width:100%}
+html[data-tablet="split"] .players-panel{order:3;width:100%}
+html[data-tablet="split"] .feed-details{order:4;width:100%}
+html[data-tablet="split"] .modal{max-width:100%;padding:22px 16px}
+html[data-tablet="split"] .sample-filters{grid-template-columns:1fr}
+@media(max-width:500px){.sample-filters{grid-template-columns:1fr}.voyage-status{font-size:12px}.voyage-status button{flex:1 1 auto}.stat-grid strong{overflow-wrap:anywhere}#recoverySecret{font-size:14px;letter-spacing:0}}
+@media(prefers-reduced-motion:reduce){.voyage-status *{scroll-behavior:auto}}
+
+html.compact-ui[data-tablet]:not([data-tablet=off]) .context-coach button{min-height:44px;padding:9px 12px}
