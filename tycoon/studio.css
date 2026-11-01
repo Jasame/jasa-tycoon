@@ -36,3 +36,64 @@ html.studio-ui[data-motion=reduced] *,html.studio-ui[data-motion=reduced] *:befo
 .studio-ui .atlas-actions{flex-wrap:nowrap}.studio-ui .atlas-actions>button{width:auto}.studio-ui #onlineButton{background:var(--accent)!important;color:var(--accent-text)!important}
 html.studio-ui[data-theme] .pawn-locator,html.studio-ui[data-theme] .auto-roll-control{background:var(--tile-surface);color:var(--ink)}
 .studio-ui .studio-has-turn #actionButtons button{background:transparent;color:var(--ink);border-color:var(--line);font-weight:400}.studio-ui .studio-has-turn #actionButtons{margin-top:8px}
+/* V12.0.1: pair every legacy dialog surface with explicit dark-theme text. */
+html.studio-ui[data-theme=midnight]{--control-line:#819c8f;--field-surface:#172b23;--status-loss:#ffc0aa;--status-gain:#b4e1c5}
+html.studio-ui[data-theme=midnight] .stat-grid>div,
+html.studio-ui[data-theme=midnight] .landmark-detail,
+html.studio-ui[data-theme=midnight] .landmark-badge,
+html.studio-ui[data-theme=midnight] .mission-card,
+html.studio-ui[data-theme=midnight] .mission-complete,
+html.studio-ui[data-theme=midnight] .online-members>span,
+html.studio-ui[data-theme=midnight] .save-card,
+html.studio-ui[data-theme=midnight] .city-postcard,
+html.studio-ui[data-theme=midnight] .selected-map-preview{background:var(--soft-surface);color:var(--ink);border-color:var(--control-line)}
+html.studio-ui[data-theme=midnight] .stat-grid strong,
+html.studio-ui[data-theme=midnight] .modal h3,
+html.studio-ui[data-theme=midnight] .map-card b,
+html.studio-ui[data-theme=midnight] .guide-target strong{color:var(--ink)}
+html.studio-ui[data-theme=midnight] .modal label,
+html.studio-ui[data-theme=midnight] .modal ol,
+html.studio-ui[data-theme=midnight] .modal li,
+html.studio-ui[data-theme=midnight] .prop-row small,
+html.studio-ui[data-theme=midnight] .save-card small,
+html.studio-ui[data-theme=midnight] .map-card small,
+html.studio-ui[data-theme=midnight] .map-card span,
+html.studio-ui[data-theme=midnight] .map-card em,
+html.studio-ui[data-theme=midnight] .mission-card small,
+html.studio-ui[data-theme=midnight] .landmark-badge small,
+html.studio-ui[data-theme=midnight] .online-members small,
+html.studio-ui[data-theme=midnight] .feed-item,
+html.studio-ui[data-theme=midnight] .saved{color:var(--secondary-text)}
+html.studio-ui[data-theme=midnight] .modal button,
+html.studio-ui[data-theme=midnight] .import-label,
+html.studio-ui[data-theme=midnight] .online-tools button{background:var(--soft-surface);color:var(--ink);border:1px solid var(--control-line)}
+html.studio-ui[data-theme=midnight] .modal .primary,
+html.studio-ui[data-theme=midnight] .modal [aria-pressed=true],
+html.studio-ui[data-theme=midnight] .connection-switch button[aria-pressed=true]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+html.studio-ui[data-theme=midnight] .modal .map-card[aria-pressed=true]{background:var(--soft-surface);color:var(--ink);outline:2px solid var(--accent);outline-offset:1px}
+html.studio-ui[data-theme=midnight] .modal input,
+html.studio-ui[data-theme=midnight] .modal select,
+html.studio-ui[data-theme=midnight] .modal textarea,
+html.studio-ui[data-theme=midnight] .modal #v9Feedback{background:var(--field-surface);color:var(--ink);border-color:var(--control-line);caret-color:var(--ink)}
+html.studio-ui[data-theme=midnight] .modal input::placeholder,
+html.studio-ui[data-theme=midnight] .modal textarea::placeholder{color:var(--secondary-text);opacity:1}
+html.studio-ui[data-theme=midnight] .modal option{background:var(--field-surface);color:var(--ink)}
+html.studio-ui[data-theme=midnight] .decision-row small,
+html.studio-ui[data-theme=midnight] .context-coach small,
+html.studio-ui[data-theme=midnight] .quick-coach>small,
+html.studio-ui[data-theme=midnight] .recap-moment small{color:var(--secondary-text);opacity:1}
+html.studio-ui[data-theme=midnight] .cash-out,
+html.studio-ui[data-theme=midnight] .risk-preview small{color:var(--status-loss)}
+html.studio-ui[data-theme=midnight] .cash-in{color:var(--status-gain)}
+html.studio-ui[data-theme=midnight] .cash-feedback{background:var(--surface);text-shadow:none;padding:4px 8px;border-radius:8px}
+html.studio-ui[data-theme=midnight] .cash-feedback.income{color:var(--status-gain)}
+html.studio-ui[data-theme=midnight] .cash-feedback.expense{color:var(--status-loss)}
+html.studio-ui[data-theme=midnight] .modal button:disabled{opacity:1;background:var(--field-surface);color:var(--muted);border-color:var(--line)}
+html.studio-ui[data-theme=midnight] .theme-choices b{color:inherit}
+html.studio-ui[data-theme=midnight] .map-badges span{opacity:1;color:var(--secondary-text);border-color:var(--control-line)}
+html.studio-ui[data-theme=midnight] .map-badges .earned{color:var(--accent);border-color:var(--accent)}
+
+html.studio-ui[data-theme=midnight] .theme-choices [aria-pressed=true] .theme-check{color:var(--accent-text)}
+html.studio-ui[data-theme=midnight] .player.out{opacity:1}html.studio-ui[data-theme=midnight] .player.out .player-money{color:var(--secondary-text)}
+
+html.studio-ui[data-theme=midnight] .modal .save-note{color:var(--secondary-text)}
