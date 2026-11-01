@@ -59,6 +59,7 @@ class Rooms{
    }else if(route==='nextReady'){if(!room.game?.players[room.members.indexOf(m)]?.out&&room.status!=='finished')throw fail('结算或退出本局后可准备下一局');m.nextReady=!!body.ready;
    }else if(route==='claimHost'){if(!this.claimable(room,m))throw fail('房主离线满一分钟后，在线真人可接任',403);room.host=m.id;room.hostGrace=now();
    }else if(route==='transferHost'){if(room.host!==m.id||room.status==='countdown')throw fail('当前仅房主可转让房间',403);const target=room.members.find(x=>x.id===body.memberId&&!x.bot&&x.id!==m.id&&now()-x.seen<20000);if(!target)throw fail('请选择另一位在线真人玩家');room.host=target.id;
+   }else if(route==='setMap'){if(room.status!=='lobby'||room.host!==m.id)throw fail('只有房主可在等待房间更换地图',403);if(!['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'].includes(body.map))throw fail('请选择有效地图');if(room.options.map!==body.map){room.options.map=body.map;room.members.forEach(x=>{if(!x.bot&&x.id!==room.host)x.ready=false})}
    }else if(route==='fillBots'){if(room.status!=='lobby'||room.host!==m.id)throw fail('只有房主可在等待房间管理人机',403);while(room.members.length<room.options.capacity)room.members.push(this.botMember(room));
    }else if(route==='rematch'){if(room.status!=='finished'||room.host!==m.id)throw fail('只有房主可在结算后发起再战',403);room.status='lobby';room.game=null;room.deadline=0;room.social=[];room.members.forEach(x=>{x.ready=!!x.bot||x.id===room.host||!!x.nextReady;x.nextReady=false;x.autopilot=false});this.engines.delete(code);
    }else if(route==='cancelStart'){if(room.status!=='countdown'||room.host!==m.id)throw fail('只有房主可取消准备倒计时',403);room.status='lobby';room.game=null;room.deadline=0;this.engines.delete(code);
@@ -104,7 +105,7 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url,'http://localhost');
   if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(rooms.storageOK?200:503,{ok:rooms.storageOK,version:'12.0.0'});return}
-  const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart|rematch|transferHost|fillBots|autopilot|nextReady|claimHost|recovery|recover|cancelRecovery)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
+  const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart|rematch|transferHost|fillBots|autopilot|nextReady|claimHost|recovery|recover|cancelRecovery|setMap)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
   if(origin&&new URL(origin).host!==host)throw fail('不接受跨站请求',403);
