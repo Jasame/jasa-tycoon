@@ -22,3 +22,10 @@
 补验时记录设备型号、系统／浏览器版本、方向、游戏版本、复现步骤和结果。不要把座位令牌、恢复码或私人存档放进公开截图。
 
 正式服已验证真人托管开关、托管完成整局、一次性恢复码在独立标签页恢复原座位及撤销旧凭证；私有备份校验与隔离恢复演练通过。独立标签页测试不代表真实跨设备硬件验收。
+
+
+## V12 UI redesign · 2026-11-01
+
+Edge InPrivate preview: 390×834 phone, 1194×834 tablet landscape, 834×1194 portrait and 600×834 split checked. Tablet modes used the manual override. Rotation retained the test game. Phone dock purchase paid ¥1,400 once (¥10,000 → ¥8,600); end-turn control remained available. Player and property dialogs, new strategy setup, three language switches and three themes checked; midnight primary contrast corrected. Tests used independent browser storage and did not advance the original user game.
+
+562 full server checks passed, including 22 new controller/presentation checks. Browser viewport QA does not equal physical-device or Safari validation. Hardware frame-rate profiling, real keyboard/calls/network transitions and long human multiplayer sessions remain pending. See V12-TEST-REPORT.json.

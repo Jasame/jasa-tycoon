@@ -1,0 +1,28 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+module.exports=function(){let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++};
+ const source=fs.readFileSync(path.join(__dirname,'tycoon/studio-ui.js'),'utf8');
+ const ctx=vm.createContext({busy:false});
+ vm.runInContext(source.slice(source.indexOf('function studioDecision('),source.indexOf('document.documentElement.classList'))+'\n'+source.slice(source.indexOf('function studioDispatch('),source.indexOf('studioTurnButton.onclick=')),ctx);
+ const game={map:'world',round:1,turn:0,phase:'roll',players:[{id:0,pos:0,cash:1000,ai:false},{id:1,pos:2,cash:1000,ai:false}]};ctx.game=game;
+ const run=code=>vm.runInContext(code,ctx);
+ ok(run('!studioDecision(game,0,true,null,false).waiting'),'Local owner is actionable');
+ ok(run('studioDecision(game,1,true,null,false).waiting'),'Other seat never follows current actor');
+ ok(run('studioDecision(game,0,false,null,false).waiting'),'Disconnected room stays waiting');
+ ok(run('studioDecision(game,0,true,{},false).waiting'),'Unconfirmed action stays waiting');
+ ok(run('studioDecision(game,0,true,null,true).waiting'),'Movement cannot unlock actions');
+ game.players[0].ai=true;ok(run('studioDecision(game,0,true,null,false).waiting'),'Managed and AI seats stay waiting');game.players[0].ai=false;
+ game.phase='auction';game.auction={bidder:1};ok(run('!studioDecision(game,1,true,null,false).waiting&&studioDecision(game,0,true,null,false).waiting'),'Auction uses bidder identity');
+ game.phase='trade';game.offer={seller:1};ok(run('!studioDecision(game,1,true,null,false).waiting'),'Trade uses seller identity');
+ game.phase='buy';ok(run('studioDecision(game,0,true,null,false).kind==="purchase"'),'Purchase has a distinct presentation');
+ game.phase='end';game.players[0].cash=-1;ok(run('studioDecision(game,0,true,null,false).kind==="debt"'),'Debt has a distinct presentation');
+ game.over=true;ok(run('studioDecision(game,0,true,null,false).kind==="finished"'),'Results retain finish state');
+ const before=JSON.stringify(game);run('studioDecision(game,0,true,null,false)');ok(JSON.stringify(game)===before,'Presentation never mutates saved rules or balances');
+ game.over=false;ctx.first=run('studioDecision(game,0,true,null,false).key');game.players[0].cash=123;ok(run('first===studioDecision(game,0,true,null,false).key'),'Cash polling does not replay decision entrance');game.round++;ok(run('first!==studioDecision(game,0,true,null,false).key'),'New round changes entrance identity');
+ let clicks=0;ctx.button={disabled:false,click(){clicks++}};run('studioDispatch(button)');ok(clicks===1,'Desktop mirror dispatches the real source once');ctx.button.disabled=true;run('studioDispatch(button)');ok(clicks===1,'Disabled source cannot be dispatched');ctx.button.disabled=false;ctx.busy=true;run('studioDispatch(button)');ok(clicks===1,'Movement blocks stale desktop clicks');run('studioDispatch(null)');ok(clicks===1,'Waiting source is harmless');
+ const flags=[false,false,false];ctx.choices=flags.map((_,i)=>({classList:{toggle(name,value){flags[i]=value}}}));run('studioMarkMirrors(choices,{button:choices[0],secondaryButton:choices[1]})');ok(flags[0]&&flags[1],'Only mirrored primary choices are marked');ok(!flags[2],'Extra bail and utility choices remain available');run('studioMarkMirrors(choices,{button:null,secondaryButton:null})');ok(flags.every(v=>!v),'Waiting clears stale mirrored visibility');
+ // Real core + save compatibility remains exercised by the existing regression suites.
+ for(const file of fs.readdirSync(path.join(__dirname,'tycoon')).filter(f=>f.endsWith('.js')))new vm.Script(fs.readFileSync(path.join(__dirname,'tycoon',file),'utf8'),{filename:file});ok(true,'Every frontend script parses');
+ console.log(checks+' V12 checks passed');return checks;
+};
+if(require.main===module)module.exports();

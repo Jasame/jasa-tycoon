@@ -1,14 +1,14 @@
-World Tycoon / 环球大富翁 — V11.0 deployment entry
+World Tycoon / 环球大富翁 — V12.0 deployment entry
 
 Read DEPLOYMENT.md for local play, first installation, same-origin proxy setup,
 persistent room storage, upgrades, backups and rollback details.
 
 Current upgrade script for the existing BaoTa environment:
-  bash deploy-v11.sh prepare
-  bash deploy-v11.sh publish
+  bash deploy-v12.sh prepare
+  bash deploy-v12.sh publish
 
 This script uses environment-specific paths and an already installed service.
-Do not use historical deploy.sh (V4) as the current V11 upgrade guide.
+Do not use historical deploy.sh (V4) as the current V12 upgrade guide.
 
 The frontend needs no build step. The Node.js backend uses built-in modules;
 third-party browser components are bundled locally with their own licenses.

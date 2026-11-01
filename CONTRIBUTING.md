@@ -29,18 +29,18 @@
 
 ```sh
 node verify.cjs
-for suite in online adventures interface economy landing comfort display pawn v6 v7 v8 v9 v10 v11; do
+for suite in online adventures interface economy landing comfort display pawn v6 v7 v8 v9 v10 v11 v12; do
   node "verify-$suite.cjs" || exit 1
 done
 ```
 
-当前 V11 发布共 **540 项检查**。其中 HTTP 子集需要能监听本地端口；受限环境可单独调用：
+当前 V12 发布共 **562 项检查**。其中 HTTP 子集需要能监听本地端口；受限环境可单独调用：
 
 ```sh
 node -e "require('./verify-online.cjs')({skipHTTP:true}).catch(e=>{console.error(e);process.exitCode=1})"
 ```
 
-此调用只执行联机套件中的 26 项，跳过 5 项 HTTP 检查，不能代替完整 31 项联机验证。V11套件另有6项HTTP检查，可通过 {skipHTTP:true} 跳过；总共跳过11项时合计529项，不能代替完整发布验证。
+此调用只执行联机套件中的 26 项，跳过 5 项 HTTP 检查，不能代替完整 31 项联机验证。V11套件另有6项HTTP检查，可通过 {skipHTTP:true} 跳过；总共跳过11项时合计551项，不能代替完整发布验证。
 
 按修改范围实际试玩：新局与旧存档、可用及不可用的升级、资产筹措、多人房间及断线恢复、桌面与窄屏、简／繁／英。自动流程不等于真实设备和长期多人测试，请在 PR 中区分已验证和未验证项目。
 
@@ -52,4 +52,4 @@ node -e "require('./verify-online.cjs')({skipHTTP:true}).catch(e=>{console.error
 
 ---
 
-**English:** Report reproducible steps, game version/map/mode, expected versus actual behavior, and browser/device details. Keep credentials and private room data out of public issues. Contributions should preserve old saves, validate actions on the server, cover all three UI languages and respect reduced motion. Run the suites above and state exactly what was tested. V11 has 540 checks; skipping five legacy and six new HTTP checks yields 529, not full release validation.
+**English:** Report reproducible steps, game version/map/mode, expected versus actual behavior, and browser/device details. Keep credentials and private room data out of public issues. Contributions should preserve old saves, validate actions on the server, cover all three UI languages and respect reduced motion. Run the suites above and state exactly what was tested. V12 has 562 checks; skipping five legacy and six new HTTP checks yields 551, not full release validation.

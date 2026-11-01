@@ -2,13 +2,13 @@
 
 A browser property-trading board game for **2–4 remote seats, solo play against AI, or local hotseat play**. Explore cities, buy property and upgrade on return visits while balancing growth against cash risk.
 
-**[Play online](https://jasa.hk/tycoon/)** · **[V11.0 release and source package](https://github.com/Jasame/jasa-tycoon/releases/tag/v11.0.0)** · [中文](README.md) · [Changelog](CHANGELOG.md) · [Deployment](DEPLOYMENT.md)
+**[Play online](https://jasa.hk/tycoon/)** · **[V12.0 release and source package](https://github.com/Jasame/jasa-tycoon/releases/tag/v12.0.0)** · [中文](README.md) · [Changelog](CHANGELOG.md) · [Deployment](DEPLOYMENT.md)
 
-Current game version: **V11.0 / 11.0.0** · Simplified Chinese / Traditional Chinese / English · MIT
+Current game version: **V12.0 / 12.0.0** · Simplified Chinese / Traditional Chinese / English · MIT
 
-## New in V11
+## New in V12
 
-Optional AI management of human seats, offline-host recovery, one-time seat transfer codes, portable cosmetic collections, filtered local samples, AI decision explanations, post-elimination review and next-game readiness. iPad has landscape, portrait and split-view layouts. Private daily snapshots support checksum checks and isolated recovery drills. See [V11 notes and limits](V11-RELEASE-NOTES.md).
+A unified warm-white, deep-green and gold visual design across three themes. A consolidated header, four menu groups, progressive decision details, compact clickable player rows, quieter property tiles and shorter motion. Mobile keeps primary actions in its dock while retaining extra choices. Existing iPad layouts, saved games and V11 multiplayer tools remain available. See [V12 release notes](V12-RELEASE-NOTES.md).
 
 ## Features
 
@@ -68,11 +68,11 @@ Open `http://localhost:8080/tycoon/`. This does not provide remote rooms. Start 
 node server/server.cjs
 ```
 
-The backend binds to `127.0.0.1:8912`; remote play requires a same-origin `/tycoon/api/` proxy, persistent storage and HTTPS in production. **`deploy-v11.sh` upgrades the existing BaoTa installation** and has environment-specific paths. Read [DEPLOYMENT.md](DEPLOYMENT.md) before using it on another server.
+The backend binds to `127.0.0.1:8912`; remote play requires a same-origin `/tycoon/api/` proxy, persistent storage and HTTPS in production. **`deploy-v12.sh` upgrades the existing BaoTa installation** and has environment-specific paths. Read [DEPLOYMENT.md](DEPLOYMENT.md) before using it on another server.
 
 ## Validation and contributions
 
-The V11 release passed **540 checks**, including room HTTP tests, authorization, save validation, deduplication, restart recovery, language coverage and new gameplay. See [test samples](V11-TEST-REPORT.json) and [contribution instructions](CONTRIBUTING.md).
+The V12 release passed **562 checks**, including room HTTP tests, authorization, save validation, deduplication, restart recovery, language coverage and new gameplay. See [test samples](V12-TEST-REPORT.json) and [contribution instructions](CONTRIBUTING.md).
 
 Edge checks covered quick-room startup, AI seats, duplicate-tab read-only mode, takeover, language switching and a 320-pixel viewport. Automated flows and browser emulation do not replace physical-device or long-term human testing. Audio and vibration depend on browser/device support; balance still needs player feedback.
 

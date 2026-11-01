@@ -1,0 +1,57 @@
+{
+  "version": "12.0.0",
+  "revision": "r3",
+  "date": "2026-11-01",
+  "fullReleaseChecks": 562,
+  "localChecks": 551,
+  "httpSkippedLocally": 11,
+  "newChecks": 22,
+  "serverFullChecks": "passed",
+  "browser": "Microsoft Edge on macOS",
+  "qaIsolation": "InPrivate browser storage; original user game not advanced",
+  "viewportQA": [
+    {
+      "width": 390,
+      "height": 834,
+      "mode": "phone",
+      "result": "passed; dock purchase paid 1400 once, cash 10000 to 8600, end turn available"
+    },
+    {
+      "width": 1194,
+      "height": 834,
+      "mode": "tablet landscape override",
+      "result": "passed; board + action columns"
+    },
+    {
+      "width": 834,
+      "height": 1194,
+      "mode": "tablet portrait override",
+      "result": "passed; board first, actions and players below; cash retained"
+    },
+    {
+      "width": 600,
+      "height": 834,
+      "mode": "tablet split override",
+      "result": "passed; dock remains reachable"
+    }
+  ],
+  "interfaceQA": [
+    "Simplified / Traditional / English switch",
+    "Jade / Ivory / Midnight themes",
+    "Midnight primary contrast correction",
+    "New strategy game setup and map selection",
+    "Player detail modal reports real cash/net worth/location",
+    "Property detail modal retains full price and rent",
+    "Desktop roll delegates to original action",
+    "Mobile purchase delegates once",
+    "No console issues observed in inspected preview"
+  ],
+  "pending": [
+    "Physical iPad/iPhone/Android",
+    "Safari",
+    "Hardware frame-time profiling / sustained 60fps",
+    "Real on-screen keyboard and interrupted calls",
+    "Long multiplayer human play"
+  ],
+  "scope": "Presentation only; economics and saved-game schemas unchanged"
+}
