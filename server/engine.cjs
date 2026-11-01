@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
 const publicPath=fs.existsSync(path.join(__dirname,'core'))?path.join(__dirname,'core'):path.join(__dirname,'../tycoon');
-const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','community.js','refinement.js','saves.js'];
+const files=['atlas.js','systems.js','journey.js','adventures.js','expansion.js','experience.js','community.js','refinement.js','voyage.js','saves.js'];
 const game=fs.readFileSync(path.join(publicPath,'game.js'),'utf8').split("$('#roll').onclick=")[0];
 const bundle=files.map(f=>fs.readFileSync(path.join(publicPath,f),'utf8')).join('\n')+'\n'+game+`
 render=()=>{};save=()=>{};scheduleAI=()=>{};toast=()=>{};beep=()=>{};showAssets=()=>{};showResults=()=>{};
@@ -60,7 +60,7 @@ globalThis.engine={
   if(state.refinement)refinementAI(p);
   if(state.expansion)expansionAI(p);
   if(p.cash<0){liquidate(p);if(p.cash<0){bankrupt(p);return}}
-  if(state.phase==='roll')await this.act(id,'roll');else if(state.phase==='buy'){const t=tiles[state.pending];await this.act(id,p.cash-t.price>=aiReserve(p)&&t.price<=aiValue(p,t)?'buy':'skip')}else if(state.phase==='end'){aiManage(p);await this.act(id,'end')}
+  if(state.phase==='roll')await this.act(id,'roll');else if(state.phase==='buy'){const t=tiles[state.pending],reserve=aiReserve(p),value=aiValue(p,t),take=p.cash-t.price>=reserve&&t.price<=value;if(state.voyage)noteAIDecision(p,take?'buy':'skip',t,p.cash-t.price<reserve?'reserve':'value',reserve,value);await this.act(id,take?'buy':'skip')}else if(state.phase==='end'){aiManage(p);await this.act(id,'end')}
  },
  async timeout(){
   if(state.over)return;

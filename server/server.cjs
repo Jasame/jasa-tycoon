@@ -1,33 +1,36 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const createEngine=require('./engine.cjs');
+const createEngine=require('./engine.cjs'),maintenance=require('./maintenance.cjs');
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 const now=()=>Date.now(),DAY=86400000;
 class Rooms{
  constructor(dir,{turnMs=180000}={}){
-  this.dir=dir;this.turnMs=turnMs;this.rooms=new Map();this.engines=new Map();this.buckets=new Map();this.queue=Promise.resolve();fs.mkdirSync(dir,{recursive:true,mode:0o700});
+  this.dir=dir;this.turnMs=turnMs;this.storageOK=true;this.lastBackup=0;this.faults=[];this.rooms=new Map();this.engines=new Map();this.buckets=new Map();this.queue=Promise.resolve();fs.mkdirSync(dir,{recursive:true,mode:0o700});
   const file=path.join(dir,'rooms.json');
   if(fs.existsSync(file)){
    const saved=JSON.parse(fs.readFileSync(file,'utf8'));if(saved.version!==1||!Array.isArray(saved.rooms))throw Error('Unsupported room data');
-   let migrated=false;for(const r of saved.rooms){if(r.updated>now()-7*DAY){r.members.forEach(m=>m.seen=0);if(r.game&&!r.game.comfort){const engine=createEngine();engine.restore(r.game);r.game=engine.snapshot();r.revision++;migrated=true;}this.rooms.set(r.code,r)}}if(migrated)this.persist();
+   let migrated=false;for(const r of saved.rooms){if(r.updated>now()-7*DAY){r.members.forEach(m=>m.seen=0);r.hostGrace=now();if(r.game&&!r.game.comfort){const engine=createEngine();engine.restore(r.game);r.game=engine.snapshot();r.revision++;migrated=true;}this.rooms.set(r.code,r)}}if(migrated)this.persist();
   }
  }
  transaction(fn){const next=this.queue.then(fn);this.queue=next.catch(()=>{});return next}
- persist(){const file=path.join(this.dir,'rooms.json'),tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify({version:1,rooms:[...this.rooms.values()]}),{mode:0o600});fs.renameSync(tmp,file)}
+ persist(){const file=path.join(this.dir,'rooms.json'),tmp=file+'.tmp';try{fs.writeFileSync(tmp,JSON.stringify({version:1,rooms:[...this.rooms.values()]}),{mode:0o600});fs.renameSync(tmp,file);this.storageOK=true}catch(e){this.storageOK=false;this.fault('storage',e);throw e}}
+ fault(kind,e){const code=['ENOSPC','EACCES','EROFS'].includes(e?.code)?e.code:'ERROR';this.faults.push({at:now(),kind:['storage','tick','backup','http'].includes(kind)?kind:'http',code});this.faults=this.faults.slice(-100);try{fs.writeFileSync(path.join(this.dir,'service-events.json'),JSON.stringify(this.faults),{mode:0o600})}catch(ignore){}}
+ backup(){if(now()-this.lastBackup<60000)return;this.lastBackup=now();try{maintenance.backup(this.dir)}catch(e){this.fault('backup',e)}}
+ claimable(room,m){const host=room.members.find(x=>x.id===room.host);return room.status!=='countdown'&&room.host!==m.id&&!m.bot&&now()-Math.max(host?.seen||0,room.hostGrace||room.created)>60000}
  engine(room){if(!this.engines.has(room.code)){const engine=createEngine();engine.restore(room.game);this.engines.set(room.code,engine)}return this.engines.get(room.code)}
- limit(ip,kind){const key=ip+':'+kind,time=now(),bucket=this.buckets.get(key)||{start:time,count:0};if(time-bucket.start>60000){bucket.start=time;bucket.count=0}bucket.count++;this.buckets.set(key,bucket);if(bucket.count>(kind==='create'?8:kind==='join'?30:kind==='poll'?600:180))throw fail('操作较频繁，请稍后再试',429);if(this.buckets.size>10000)for(const [k,b]of this.buckets)if(time-b.start>60000)this.buckets.delete(k)}
+ limit(ip,kind){const key=ip+':'+kind,time=now(),bucket=this.buckets.get(key)||{start:time,count:0};if(time-bucket.start>60000){bucket.start=time;bucket.count=0}bucket.count++;this.buckets.set(key,bucket);if(bucket.count>(kind==='create'?8:kind==='join'?30:kind==='poll'?600:kind==='recover'?8:180))throw fail('操作较频繁，请稍后再试',429);if(this.buckets.size>10000)for(const [k,b]of this.buckets)if(time-b.start>60000)this.buckets.delete(k)}
  member(room,token){if(typeof token!=='string'||token.length<32||token.length>128)throw fail('请重新加入或恢复你的座位',401);const h=hash(token),m=room.members.find(x=>!x.bot&&x.hash===h);if(!m)throw fail('座位凭证已失效',401);m.seen=now();return m}
- view(room,m){return {version:'10.0.0',code:room.code,revision:room.revision,status:room.status,me:room.members.indexOf(m),host:room.host===m.id,options:room.options,allReady:room.members.length>=2&&room.members.every(x=>x.ready&&(x.bot||now()-x.seen<20000)),social:(room.social||[]).filter(x=>now()-x.at<12000),members:room.members.map(x=>({id:x.id,name:x.name,host:x.id===room.host,cosmetics:this.cosmetics(x.cosmetics),ready:x.ready,bot:!!x.bot,avatar:x.avatar||'fox',career:x.career||'architect',online:!!x.bot||now()-x.seen<20000})),deadline:room.deadline,serverTime:now(),game:room.game||null,ack:m.actions.slice(-100)}}
+ view(room,m){return {version:'11.0.0',hostClaimable:this.claimable(room,m),autopilot:!!m.autopilot,nextReady:!!m.nextReady,code:room.code,revision:room.revision,status:room.status,me:room.members.indexOf(m),host:room.host===m.id,options:room.options,allReady:room.members.length>=2&&room.members.every(x=>x.ready&&(x.bot||now()-x.seen<20000)),social:(room.social||[]).filter(x=>now()-x.at<12000),members:room.members.map(x=>({id:x.id,name:x.name,host:x.id===room.host,cosmetics:this.cosmetics(x.cosmetics),ready:x.ready,autopilot:!!x.autopilot,nextReady:!!x.nextReady,bot:!!x.bot,avatar:x.avatar||'fox',career:x.career||'architect',online:!!x.bot||now()-x.seen<20000})),deadline:room.deadline,serverTime:now(),game:room.game||null,ack:m.actions.slice(-100)}}
  duration(room){return room.options.experience&&room.options.limit===12?Math.min(this.turnMs,90000):this.turnMs}
  avatar(value){return ['fox','cat','panda','rabbit','bear','frog','owl','penguin','dog','koala','tiger','raccoon'].includes(value)?value:'fox'}
  cosmetics(x){return {pawn:['classic','gem','star'].includes(x?.pawn)?x.pawn:'classic',dice:['classic','mint','ink'].includes(x?.dice)?x.dice:'classic',frame:['none','laurel','orbit'].includes(x?.frame)?x.frame:'none'}}
  botMember(room){const i=[1,2,3,4].find(i=>!room.members.some(x=>x.name==='AI '+i));return {id:crypto.randomUUID(),name:'AI '+i,avatar:['panda','cat','rabbit','bear'][i-1],career:['architect','traveler','banker','merchant'][i-1],bot:true,ready:true,seen:now(),actions:[]}}
  career(value){return ['architect','traveler','banker','merchant'].includes(value)?value:'architect'}
  name(value){const name=String(value||'').trim().replace(/[\u0000-\u001f]/g,'').slice(0,12);if(!name)throw fail('请输入玩家昵称');return name}
- options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {refinement:input?.refinement===true,community:input?.community===true,experience:input?.experience===true,pace:input?.pace==='quick'?'quick':'standard',personality:['builder','traveler','steady'].includes(input?.personality)?input.personality:'mixed',difficulty:['easy','normal','expert'].includes(input?.difficulty)?input.difficulty:'normal',expansion:input?.expansion===true,map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,12,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
+ options(input){const maps=['world','asia','europe','africa','north-america','south-america','oceania','antarctica','legacy'];return {voyage:input?.voyage===true,refinement:input?.refinement===true,community:input?.community===true,experience:input?.experience===true,pace:input?.pace==='quick'?'quick':'standard',personality:['builder','traveler','steady'].includes(input?.personality)?input.personality:'mixed',difficulty:['easy','normal','expert'].includes(input?.difficulty)?input.difficulty:'normal',expansion:input?.expansion===true,map:maps.includes(input?.map)?input.map:'world',capacity:[2,3,4].includes(Number(input?.capacity))?Number(input.capacity):4,limit:[0,12,20,30,60].includes(Number(input?.limit))?Number(input.limit):20}}
  async handle(method,route,body,token,ip){return this.transaction(async()=>{
-  this.limit(ip,route==='create'?'create':route==='join'?'join':route==='state'?'poll':'action');
+  this.limit(ip,route==='create'?'create':route==='join'?'join':route==='state'?'poll':route==='recover'?'recover':'action');
   if(route==='create'){
    this.expire();if(this.rooms.size>=100)throw fail('房间已满，请稍后再试',503);
    let code;do{code=crypto.randomBytes(5).toString('hex').slice(0,8).toUpperCase()}while(this.rooms.has(code));
@@ -35,6 +38,9 @@ class Rooms{
    const room={code,status:'lobby',revision:1,host:m.id,options:this.options(body),members:[m],game:null,created:now(),updated:now(),deadline:0};this.rooms.set(code,room);try{this.persist()}catch(e){this.rooms.delete(code);throw e}return {...this.view(room,m),token:secret};
   }
   const code=String(body.code||'').toUpperCase();if(!/^[A-F0-9]{8}$/.test(code))throw fail('请输入 8 位房间码');const room=this.rooms.get(code);if(!room)throw fail('房间不存在或已过期',404);
+  if(route==='recover'){
+   const key=String(body.recovery||'').toUpperCase().replace(/[- ]/g,'');if(!/^[A-F0-9]{32}$/.test(key))throw fail('恢复码无效或已过期',401);const m=room.members.find(x=>!x.bot&&x.recovery?.hash===hash(key)&&x.recovery.expires>now());if(!m)throw fail('恢复码无效或已过期',401);const previous=JSON.stringify(room),secret=crypto.randomBytes(32).toString('hex');m.hash=hash(secret);m.recovery=null;m.actions=[];m.seen=now();room.revision++;room.updated=now();try{this.persist()}catch(e){this.rooms.set(code,JSON.parse(previous));throw e}return {...this.view(room,m),token:secret};
+  }
   if(route==='join'){
    if(room.status!=='lobby')throw fail('本局已开始，请使用已保存的座位重连');if(room.members.length>=room.options.capacity)throw fail('房间已满');const name=this.name(body.name);if(room.members.some(m=>m.name===name))throw fail('昵称已被使用，请换一个昵称');
    const secret=crypto.randomBytes(32).toString('hex'),m={id:crypto.randomUUID(),name,avatar:this.avatar(body.avatar),career:this.career(body.career),cosmetics:this.cosmetics(body.cosmetics),hash:hash(secret),ready:false,seen:now(),actions:[]};const previous=JSON.stringify(room);room.members.push(m);room.revision++;room.updated=now();try{this.persist()}catch(e){this.rooms.set(code,JSON.parse(previous));throw e}return {...this.view(room,m),token:secret};
@@ -46,9 +52,15 @@ class Rooms{
   if(body.revision!==room.revision)throw fail('对局已更新，请查看最新状态后重试',409);
   const previous=JSON.stringify(room);
   try{
-   if(route==='transferHost'){if(room.host!==m.id||room.status==='countdown')throw fail('当前仅房主可转让房间',403);const target=room.members.find(x=>x.id===body.memberId&&!x.bot&&x.id!==m.id&&now()-x.seen<20000);if(!target)throw fail('请选择另一位在线真人玩家');room.host=target.id;
+   if(route==='recovery'){
+    const key=crypto.randomBytes(16).toString('hex').toUpperCase();m.recovery={hash:hash(key),expires:now()+600000};m.actions.push(body.actionId);m.actions=m.actions.slice(-100);room.revision++;room.updated=now();this.persist();return {...this.view(room,m),recoveryCode:key,recoveryExpires:m.recovery.expires};
+   }else if(route==='cancelRecovery'){m.recovery=null;
+   }else if(route==='autopilot'){if(room.status!=='playing'||room.game.players[room.members.indexOf(m)].out||typeof body.enabled!=='boolean')throw fail('当前不能更改托管');m.autopilot=body.enabled;room.game.players[room.members.indexOf(m)].ai=body.enabled;this.engines.delete(code);
+   }else if(route==='nextReady'){if(!room.game?.players[room.members.indexOf(m)]?.out&&room.status!=='finished')throw fail('结算或退出本局后可准备下一局');m.nextReady=!!body.ready;
+   }else if(route==='claimHost'){if(!this.claimable(room,m))throw fail('房主离线满一分钟后，在线真人可接任',403);room.host=m.id;room.hostGrace=now();
+   }else if(route==='transferHost'){if(room.host!==m.id||room.status==='countdown')throw fail('当前仅房主可转让房间',403);const target=room.members.find(x=>x.id===body.memberId&&!x.bot&&x.id!==m.id&&now()-x.seen<20000);if(!target)throw fail('请选择另一位在线真人玩家');room.host=target.id;
    }else if(route==='fillBots'){if(room.status!=='lobby'||room.host!==m.id)throw fail('只有房主可在等待房间管理人机',403);while(room.members.length<room.options.capacity)room.members.push(this.botMember(room));
-   }else if(route==='rematch'){if(room.status!=='finished'||room.host!==m.id)throw fail('只有房主可在结算后发起再战',403);room.status='lobby';room.game=null;room.deadline=0;room.social=[];room.members.forEach(x=>x.ready=!!x.bot||x.id===room.host);this.engines.delete(code);
+   }else if(route==='rematch'){if(room.status!=='finished'||room.host!==m.id)throw fail('只有房主可在结算后发起再战',403);room.status='lobby';room.game=null;room.deadline=0;room.social=[];room.members.forEach(x=>{x.ready=!!x.bot||x.id===room.host||!!x.nextReady;x.nextReady=false;x.autopilot=false});this.engines.delete(code);
    }else if(route==='cancelStart'){if(room.status!=='countdown'||room.host!==m.id)throw fail('只有房主可取消准备倒计时',403);room.status='lobby';room.game=null;room.deadline=0;this.engines.delete(code);
    }else if(route==='addBot'){
     if(room.status!=='lobby'||room.host!==m.id)throw fail('只有房主可在等待房间管理人机',403);if(room.members.length>=room.options.capacity)throw fail('房间已满');const i=[1,2,3,4].find(i=>!room.members.some(x=>x.name==='AI '+i));room.members.push({id:crypto.randomUUID(),name:'AI '+i,avatar:['panda','cat','rabbit','bear'][i-1],career:['architect','traveler','banker','merchant'][i-1],bot:true,ready:true,seen:now(),actions:[]});
@@ -65,7 +77,7 @@ class Rooms{
     const engine=createEngine();room.game=engine.init(room.options,room.members.map(x=>({name:x.name,bot:!!x.bot,avatar:x.avatar,career:x.career,cosmetics:x.cosmetics})));room.status=body.countdown?'countdown':'playing';room.deadline=now()+(body.countdown?3000:this.duration(room));this.engines.set(code,engine);
    }
    else if(route==='action'){
-    if(room.status!=='playing')throw fail('请等待房主开始');
+    if(room.status!=='playing')throw fail('请等待房主开始');if(m.autopilot)throw fail('请先接管再操作');
     const allowed=['roll','buy','skip','end','bail','bankrupt','build','sell','mortgage','bid','pass','offerTrade','acceptTrade','rejectTrade','card','travel','project','tradePrefs','challenge','route'];if(!allowed.includes(body.command))throw fail('不支持的操作');
     const before=room.game,key=g=>g.turn+':'+g.phase+':'+(g.auction?.bidder??'')+':'+(g.offer?.seller??'');
     const engine=this.engine(room);await engine.act(room.members.indexOf(m),body.command,body.arg);engine.noteAction();room.game=engine.snapshot();
@@ -91,8 +103,8 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
  function send(status,data){res.writeHead(status,headers);res.end(JSON.stringify(data))}
  try{
   const url=new URL(req.url,'http://localhost');
-  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(200,{ok:true,version:'10.0.0'});return}
-  const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart|rematch|transferHost|fillBots)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
+  if(req.method==='GET'&&url.pathname==='/tycoon/api/health'){send(rooms.storageOK?200:503,{ok:rooms.storageOK,version:'11.0.0'});return}
+  const match=url.pathname.match(/^\/tycoon\/api\/(create|join|state|ready|leave|start|action|addBot|removeBot|profile|emote|cancelStart|rematch|transferHost|fillBots|autopilot|nextReady|claimHost|recovery|recover|cancelRecovery)$/);if(!match||req.method!=='POST')throw fail('接口不存在',404);
   // Nginx forwards the actual Origin; do not accept cross-site JSON requests.
   const origin=req.headers.origin,host=req.headers['x-forwarded-host']||req.headers.host;
   if(origin&&new URL(origin).host!==host)throw fail('不接受跨站请求',403);
@@ -101,12 +113,12 @@ function makeServer(rooms){return http.createServer(async(req,res)=>{
   if(!body||typeof body!=='object'||Array.isArray(body))throw fail('请求格式不正确');
   const token=String(req.headers.authorization||'').replace(/^Bearer /,'');const ip=String(req.headers['x-real-ip']||req.socket.remoteAddress);
   const result=await rooms.handle(req.method,match[1],body,token,ip);send(200,result);
- }catch(e){const status=e.status||400;if(!e.status&&/ENOSPC|EACCES|EROFS/.test(String(e.code))){send(503,{error:'服务器保存失败，请稍后再试'});return}send(status,{error:e.status||!e.code?e.message:'服务暂时不可用'})}
+ }catch(e){const status=e.status||400;if(e.code)rooms.fault('http',e);if(!e.status&&/ENOSPC|EACCES|EROFS/.test(String(e.code))){send(503,{error:'服务器保存失败，请稍后再试'});return}send(status,{error:e.status||!e.code?e.message:'服务暂时不可用'})}
  })}
 if(require.main===module){
  const rooms=new Rooms(process.env.STATE_DIR||path.join(__dirname,'data')),server=makeServer(rooms);
  server.requestTimeout=10000;server.headersTimeout=10000;
- const timer=setInterval(()=>rooms.tick().catch(e=>console.error('Room tick failed:',e.message)),1000);timer.unref();
+ const timer=setInterval(()=>rooms.tick().then(()=>rooms.backup()).catch(e=>{rooms.fault('tick',e);console.error('Room tick failed')}),1000);timer.unref();
  server.listen(Number(process.env.PORT||8912),'127.0.0.1',()=>console.log('World Tycoon online ready on loopback'));
  process.on('SIGTERM',()=>server.close(()=>process.exit(0)));
 }
