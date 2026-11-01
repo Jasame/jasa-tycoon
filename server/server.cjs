@@ -55,7 +55,7 @@ class Rooms{
    if(route==='recovery'){
     const key=crypto.randomBytes(16).toString('hex').toUpperCase();m.recovery={hash:hash(key),expires:now()+600000};m.actions.push(body.actionId);m.actions=m.actions.slice(-100);room.revision++;room.updated=now();this.persist();return {...this.view(room,m),recoveryCode:key,recoveryExpires:m.recovery.expires};
    }else if(route==='cancelRecovery'){m.recovery=null;
-   }else if(route==='autopilot'){if(room.status!=='playing'||room.game.players[room.members.indexOf(m)].out||typeof body.enabled!=='boolean')throw fail('当前不能更改托管');m.autopilot=body.enabled;room.game.players[room.members.indexOf(m)].ai=body.enabled;this.engines.delete(code);
+   }else if(route==='autopilot'){if(room.status!=='playing'||room.game.players[room.members.indexOf(m)].out||typeof body.enabled!=='boolean')throw fail('当前不能更改托管');m.autopilot=body.enabled;if(body.enabled&&room.game.voyage){room.game.voyage.managed||=Array(room.members.length).fill(false);room.game.voyage.managed[room.members.indexOf(m)]=true}room.game.players[room.members.indexOf(m)].ai=body.enabled;this.engines.delete(code);
    }else if(route==='nextReady'){if(!room.game?.players[room.members.indexOf(m)]?.out&&room.status!=='finished')throw fail('结算或退出本局后可准备下一局');m.nextReady=!!body.ready;
    }else if(route==='claimHost'){if(!this.claimable(room,m))throw fail('房主离线满一分钟后，在线真人可接任',403);room.host=m.id;room.hostGrace=now();
    }else if(route==='transferHost'){if(room.host!==m.id||room.status==='countdown')throw fail('当前仅房主可转让房间',403);const target=room.members.find(x=>x.id===body.memberId&&!x.bot&&x.id!==m.id&&now()-x.seen<20000);if(!target)throw fail('请选择另一位在线真人玩家');room.host=target.id;
