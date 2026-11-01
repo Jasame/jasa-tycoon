@@ -1082,7 +1082,7 @@ Object.assign(EN_TEXT,{"跨设备收藏护照": "Cross-device collection passpor
 Object.assign(EN_TEXT,{'托管':'AI managed'});
 Object.assign(EN_TEXT,{'托管记录无效':'Invalid AI management record','仅统计本浏览器结算的最近60局，含后台与离线影响；不代表全体玩家胜率。托管局不计入主动试玩样本，导入收藏不计入样本，旧记录无法区分联机模式时仍按原模式显示。':'Only recent games finished in this browser, including background and offline time. Not a population win rate. AI-managed games and imported collections are excluded from active-play samples. Older records retain their original mode.'});
 Object.assign(EN_TEXT,{"本局":"Game","房间":"Room","外观":"Appearance","存档":"Saves","邀请与房间设置":"Invite & room settings","放大或缩小棋盘":"Zoom board in or out","棋子":"Pawn","总资产":"Net worth","地产数量":"Properties","当前位置":"Location","人机正在经营":"AI managed","真人玩家":"Human player","正在行动":"Taking a turn","查看玩家详情":"View player details","本局结算":"Game result","待售地产":"Property for sale","公开拍卖":"Open auction","交易答复":"Trade response","现金周转":"Cash management","准备出发":"Ready to roll","到站结算":"Stop result","当前决策":"Current decision","等待行动":"Waiting","租金、风险与提示":"Rent, risks & tips","待售":"For sale","级建筑":"building level"});
-Object.assign(EN_TEXT,{'本次支付':'Payment'});
+Object.assign(EN_TEXT,{'本次支付':'Payment','更换地图':'Change map','更换地图后，其他真人玩家需要重新准备。':'After changing the map, other human players must confirm readiness again.','只有房主可在等待房间更换地图':'Only the host can change the map while waiting','请选择有效地图':'Choose a valid map','确认更换地图':'Confirm map change'});
 delete EN_TEXT['第'];
 let englishPattern;
 function rebuildEnglishPattern(){englishPattern=new RegExp(Object.keys(EN_TEXT).filter(Boolean).sort((a,b)=>b.length-a.length).map(escapeRegex).join('|'),'g')}

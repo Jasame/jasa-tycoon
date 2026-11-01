@@ -97,3 +97,6 @@ html.studio-ui[data-theme=midnight] .theme-choices [aria-pressed=true] .theme-ch
 html.studio-ui[data-theme=midnight] .player.out{opacity:1}html.studio-ui[data-theme=midnight] .player.out .player-money{color:var(--secondary-text)}
 
 html.studio-ui[data-theme=midnight] .modal .save-note{color:var(--secondary-text)}
+
+.room-map-button{min-height:44px;margin-top:10px;padding:10px 14px;background:var(--soft-surface);color:var(--ink);border:1px solid var(--line);border-radius:10px}
+html.studio-ui[data-theme=midnight] .room-map-button{border-color:var(--control-line)}
