@@ -1,0 +1,146 @@
+{
+  "version": "12.0.1",
+  "backendVersion": "12.0.0",
+  "targetedChecks": 72,
+  "contrast": {
+    "checks": 21,
+    "pairs": [
+      {
+        "foreground": "--ink",
+        "background": "--paper",
+        "ratio": 14.73,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--paper",
+        "ratio": 9.11,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--ink",
+        "background": "--surface",
+        "ratio": 12.53,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--surface",
+        "ratio": 7.74,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--ink",
+        "background": "--tile-surface",
+        "ratio": 10.57,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--tile-surface",
+        "ratio": 6.54,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--ink",
+        "background": "--soft-surface",
+        "ratio": 9.85,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--soft-surface",
+        "ratio": 6.09,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--ink",
+        "background": "--board-surface",
+        "ratio": 12.62,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--board-surface",
+        "ratio": 7.8,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--ink",
+        "background": "--dialog-surface",
+        "ratio": 12.53,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--dialog-surface",
+        "ratio": 7.74,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--ink",
+        "background": "--field-surface",
+        "ratio": 12.61,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--secondary-text",
+        "background": "--field-surface",
+        "ratio": 7.79,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--accent-text",
+        "background": "--accent",
+        "ratio": 9.44,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--muted",
+        "background": "--field-surface",
+        "ratio": 6.51,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--status-loss",
+        "background": "--soft-surface",
+        "ratio": 7.43,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--status-gain",
+        "background": "--soft-surface",
+        "ratio": 8.07,
+        "minimum": 4.5
+      },
+      {
+        "foreground": "--control-line",
+        "background": "--field-surface",
+        "ratio": 5.04,
+        "minimum": 3
+      },
+      {
+        "foreground": "--control-line",
+        "background": "--soft-surface",
+        "ratio": 3.94,
+        "minimum": 3
+      },
+      {
+        "foreground": "--control-line",
+        "background": "--dialog-surface",
+        "ratio": 5.01,
+        "minimum": 3
+      }
+    ]
+  },
+  "browserQA": [
+    "Player stats",
+    "Property values and rent",
+    "Save cards and controls",
+    "Online form labels and inputs",
+    "Appearance selection states",
+    "390×834 dark settings dialog"
+  ],
+  "scope": "Defined color-pair tests; not a whole-site accessibility certification",
+  "physicalDevices": "Not tested"
+}

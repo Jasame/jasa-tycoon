@@ -2,9 +2,12 @@
 
 A browser property-trading board game for **2–4 remote seats, solo play against AI, or local hotseat play**. Explore cities, buy property and upgrade on return visits while balancing growth against cash risk.
 
-**[Play online](https://jasa.hk/tycoon/)** · **[V12.0 release and source package](https://github.com/Jasame/jasa-tycoon/releases/tag/v12.0.0)** · [中文](README.md) · [Changelog](CHANGELOG.md) · [Deployment](DEPLOYMENT.md)
+**[Play online](https://jasa.hk/tycoon/)** · **[V12.0.1 release and source package](https://github.com/Jasame/jasa-tycoon/releases/tag/v12.0.1)** · [中文](README.md) · [Changelog](CHANGELOG.md) · [Deployment](DEPLOYMENT.md)
 
-Current game version: **V12.0 / 12.0.0** · Simplified Chinese / Traditional Chinese / English · MIT
+Current game version: **V12.0.1 / backend 12.0.0** · Simplified Chinese / Traditional Chinese / English · MIT
+
+
+V12.0.1 fixes dark-mode contrast in statistics, save controls, forms and labels. See [patch notes](V12.0.1-RELEASE-NOTES.md).
 
 ## New in V12
 
