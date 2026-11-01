@@ -1,0 +1,23 @@
+{
+  "version": "11.0.0",
+  "localChecks": 529,
+  "serverHTTPChecks": 11,
+  "releaseChecks": 540,
+  "newChecks": 72,
+  "capacity": {
+    "rooms": 100,
+    "method": "Sequential serialization and restart test; HTTP suite separately exercises 20 concurrent polls."
+  },
+  "balanceGames": 144,
+  "physicalDevices": "Not tested; browser viewport checks recorded separately.",
+  "productionChecks": [
+    "AI management and reclaim UI",
+    "One-time seat transfer and original credential rejection",
+    "Private snapshot checksum and isolated restore drill"
+  ],
+  "browserViewports": [
+    "1194x834",
+    "834x1194",
+    "600x834"
+  ]
+}

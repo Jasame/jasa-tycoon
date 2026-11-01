@@ -2,9 +2,13 @@
 
 A browser property-trading board game for **2–4 remote seats, solo play against AI, or local hotseat play**. Explore cities, buy property and upgrade on return visits while balancing growth against cash risk.
 
-**[Play online](https://jasa.hk/tycoon/)** · **[V10.0 release and source package](https://github.com/Jasame/jasa-tycoon/releases/tag/v10.0.0)** · [中文](README.md) · [Changelog](CHANGELOG.md) · [Deployment](DEPLOYMENT.md)
+**[Play online](https://jasa.hk/tycoon/)** · **[V11.0 release and source package](https://github.com/Jasame/jasa-tycoon/releases/tag/v11.0.0)** · [中文](README.md) · [Changelog](CHANGELOG.md) · [Deployment](DEPLOYMENT.md)
 
-Current game version: **V10.0 / 10.0.0** · Simplified Chinese / Traditional Chinese / English · MIT
+Current game version: **V11.0 / 11.0.0** · Simplified Chinese / Traditional Chinese / English · MIT
+
+## New in V11
+
+Optional AI management of human seats, offline-host recovery, one-time seat transfer codes, portable cosmetic collections, filtered local samples, AI decision explanations, post-elimination review and next-game readiness. iPad has landscape, portrait and split-view layouts. Private daily snapshots support checksum checks and isolated recovery drills. See [V11 notes and limits](V11-RELEASE-NOTES.md).
 
 ## Features
 
@@ -46,7 +50,7 @@ The server generates dice rolls and validates actions, balances, turn ownership,
 
 A browser tab lease makes duplicate tabs of one seat read-only until takeover or expiry. Cross-device requests still rely on server validation. Lobby rooms are retained for 24 hours after the last change, and started/finished rooms for seven days after the last action. Invitations contain a room code, never seat credentials.
 
-Local play has auto-save, five manual slots, a previous-game backup and JSON import/export. Online games are stored separately on the server. Cosmetics and feedback stay in this browser, without account-based cross-device sync. Feedback is not uploaded automatically; manual report exports exclude identities, room codes, credentials, saves, raw ledgers and free text. Clearing site data resets local records.
+Local play has auto-save, five manual slots, a previous-game backup and JSON import/export. Online games are stored separately on the server. Cosmetics and feedback stay in this browser, without account-based cloud sync. Collection files can be manually merged on another device. One-time recovery codes transfer an online seat and revoke the original credentials. Feedback is not uploaded automatically; manual report exports exclude identities, room codes, credentials, saves, raw ledgers and free text. Clearing site data resets local records.
 
 ## Run and deploy
 
@@ -64,11 +68,11 @@ Open `http://localhost:8080/tycoon/`. This does not provide remote rooms. Start 
 node server/server.cjs
 ```
 
-The backend binds to `127.0.0.1:8912`; remote play requires a same-origin `/tycoon/api/` proxy, persistent storage and HTTPS in production. **`deploy-v10.sh` upgrades the existing BaoTa installation** and has environment-specific paths. Read [DEPLOYMENT.md](DEPLOYMENT.md) before using it on another server.
+The backend binds to `127.0.0.1:8912`; remote play requires a same-origin `/tycoon/api/` proxy, persistent storage and HTTPS in production. **`deploy-v11.sh` upgrades the existing BaoTa installation** and has environment-specific paths. Read [DEPLOYMENT.md](DEPLOYMENT.md) before using it on another server.
 
 ## Validation and contributions
 
-The V10 release passed **468 checks**, including room HTTP tests, authorization, save validation, deduplication, restart recovery, language coverage and new gameplay. See [test samples](V10-TEST-REPORT.json) and [contribution instructions](CONTRIBUTING.md).
+The V11 release passed **540 checks**, including room HTTP tests, authorization, save validation, deduplication, restart recovery, language coverage and new gameplay. See [test samples](V11-TEST-REPORT.json) and [contribution instructions](CONTRIBUTING.md).
 
 Edge checks covered quick-room startup, AI seats, duplicate-tab read-only mode, takeover, language switching and a 320-pixel viewport. Automated flows and browser emulation do not replace physical-device or long-term human testing. Audio and vibration depend on browser/device support; balance still needs player feedback.
 
